@@ -1,0 +1,83 @@
+body{
+  background: #698b69;
+  color: #9bcd9b;
+  font-family: Helvetica;
+  font-weight: bold;
+  font-size: 10pt;
+  margin: 0pt;
+}
+
+a{
+  color: #698b69;
+  text-decoration: none;
+  background: #9bcd9b ;
+  border-style: none; 
+}
+          
+a.title{
+  font-weight: bold;
+}
+
+table{
+  width: 1000px;
+  border: 2px solid #9bcd9b;
+}
+
+table.menu{
+  padding: 10px 3px;
+}
+
+table.layout{
+  padding: 3px;
+}
+
+.highlight{
+  background-color: yellow;
+}
+
+input.config{
+  color: #9bcd9b;
+  background-color: #698b69;
+  border: solid 1px #9bcd9b;
+  width: 13cm;
+}
+
+textarea.config{
+  width: 13cm;
+  background-color: #698b69;
+}
+
+.select{
+  color: #698b69;
+  background-color: #9bcd9b;
+  border: #698b69;
+}
+
+.search{
+  width: 6cm;
+  border: solid 1px #9bcd9b;
+  background-color: #698b69;
+  color : #9bcd9b;
+}
+
+input.file{
+  border: 1px solid #9bcd9b;
+  background-color: #698b69;
+  color : #9bcd9b;
+}
+
+button{
+  border: 1px solid #9bcd9b;
+  color:  #698b69;
+  background-color: #9bcd9b;
+  cursor: pointer;
+}
+
+div.autocomplete{
+  visibility:hidden;
+  width:10cm;
+  border:solid 1px #ffa54f;
+  background: #ffa54f;
+  position:absolute;
+  overflow:hidden;
+}

@@ -1,0 +1,203 @@
+/**
+ *  @file   Database.cpp
+ *  @brief  Database Class Implementation
+ *  @author KrizTioaN (christiaanboersma@hotmail.com)
+ *  @date   2021-07-21
+ *  @note   BSD-3 licensed
+ *
+ ***********************************************/
+
+#include "Database.h"
+
+Database::Database(const std::filesystem::path &f) : filename(f) {
+
+  state = false;
+
+  int fd = open(filename.c_str(), O_RDONLY | O_SHLOCK);
+  if (fd == -1) {
+    return;
+  }
+
+  struct stat f_stat;
+  if (fstat(fd, &f_stat) == -1 || (f_stat.st_mode & S_IFDIR)) {
+    close(fd);
+    return;
+  }
+
+  size = f_stat.st_size;
+
+  data = (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE,
+                      MAP_PRIVATE, fd, 0);
+
+  if (!data) {
+    return;
+  }
+
+  memcpy(&id, data, sizeof(long));
+
+  vRecords.reserve(256);
+
+  char *p = data + sizeof(long) + 1;
+  char *q = p;
+  do {
+    if (*p == '\n') {
+      *p = '\0';
+      vRecords.emplace_back(q);
+      q = p + 1;
+    }
+  } while (*++p);
+
+  close(fd);
+
+  state = true;
+}
+
+Database::~Database() {
+  if (data) {
+    munmap(data, size);
+  }
+}
+
+bool Database::good() { return state; }
+
+bool Database::Commit() {
+
+  static char tmp[] = "./tmp/adb.XXXXXX";
+
+  mktemp(tmp);
+
+  int fd = open(tmp, O_CREAT | O_WRONLY | O_EXLOCK | O_TRUNC);
+  if (fd == -1) {
+    return false;
+  }
+
+  __gnu_cxx::stdio_filebuf<char> ofbuf(fd, std::ios::out);
+  std::ostream ostr(&ofbuf);
+  if (ostr.fail()) {
+    return false;
+  }
+
+  ostr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
+  for (auto &r : vRecords) {
+    auto f = r.mFields.begin();
+    ostr << f->first << '=' << Coders::URLEncode(f->second);
+    for (++f; f != r.mFields.end(); ++f) {
+      ostr << '&' << f->first << '=' << Coders::URLEncode(f->second);
+    }
+    ostr << "\n";
+  }
+  ofbuf.close();
+
+  rename(tmp, filename.c_str());
+
+  return (true);
+}
+
+bool Database::SetRecord(Record &record, std::string_view id_str) {
+  if (id_str == "-1") {
+    record.mFields.at("id") = std::to_string(id++);
+    vRecords.push_back(record);
+    return (true);
+  } else {
+    for (auto &r : vRecords) {
+      if (r.mFields.at("id") == id_str) {
+        r = record;
+        return true;
+      }
+    }
+  }
+  return (false);
+}
+
+bool Database::RemoveRecord(std::string_view id_str) {
+  for (auto it = vRecords.begin(); it < vRecords.end(); it++) {
+    if (it->mFields.at("id") == id_str) {
+      vRecords.erase(it);
+      return (true);
+    }
+  }
+  return (false);
+}
+
+void Database::SortRecords(const char *key, bool reverse) {
+
+  if (!reverse) {
+    std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
+      return (Coders::LaTeXDecode(r1.mFields[key]) <
+              Coders::LaTeXDecode(r2.mFields[key]));
+    });
+  } else {
+    std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
+      return (Coders::LaTeXDecode(r1.mFields[key]) >
+              Coders::LaTeXDecode(r2.mFields[key]));
+    });
+  }
+};
+
+std::vector<std::string>
+Database::UniqueValuesForKey(const char *key,
+                             std::vector<std::string> (*func)(std::string)) {
+
+  std::vector<std::string> vValues;
+  vValues.reserve(64);
+
+  for (auto &r : vRecords) {
+    std::vector<std::string> needles(func(r.mFields[key]));
+    for (const auto &n : needles) {
+      bool found = false;
+      for (const auto &v : vValues) {
+        if (n == v) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        vValues.emplace_back(n);
+      }
+    }
+  }
+
+  std::sort(vValues.begin(), vValues.end());
+
+  return (vValues);
+}
+
+std::vector<std::vector<Record>>
+Database::DuplicateRecordsForKey(const char *key) {
+
+  SortRecords(key);
+
+  std::vector<Record> vDuplicate;
+
+  std::vector<std::vector<Record>> vDuplicates;
+
+  std::string_view value;
+
+  auto res = vRecords.begin(), end = vRecords.end(), sec = res;
+  while ((res = std::adjacent_find(res, end, [key](Record &r1, Record &r2) {
+            return (r1.mFields[key] == r2.mFields[key]);
+          })) != end) {
+
+    if (value.empty()) {
+      value = res->mFields[key];
+    }
+
+    if (value == res->mFields[key]) {
+      vDuplicate.push_back(*res++);
+    } else {
+      vDuplicate.push_back(*sec);
+      vDuplicates.emplace_back(vDuplicate);
+      vDuplicate.clear();
+      value = res->mFields[key];
+      vDuplicate.push_back(*res++);
+    }
+    sec = res;
+  }
+
+  if (!vDuplicate.empty()) {
+    vDuplicate.push_back(*sec);
+    vDuplicates.emplace_back(vDuplicate);
+  }
+
+  return (vDuplicates);
+}

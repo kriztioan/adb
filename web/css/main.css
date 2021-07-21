@@ -1,0 +1,173 @@
+body {
+    padding: 0;
+}
+
+table.menu {
+    margin: 0 auto 0;
+}
+
+table.menu #browse, .menu #tools{
+    margin-left: 2em;
+}
+
+table.menu #col2 {
+    text-align: right;
+}
+
+table.layout {
+    margin: 2em auto 0;
+    border-collapse: collapse;
+}
+
+#submenu #col1 {
+    padding: 0.5em 0;
+}
+
+#submenu #delete {
+    margin-left: 2em;
+}
+
+#submenu #BibTeX {
+    margin-left: 49.9em;
+}
+
+th {
+    text-align: left;
+    border-style: solid none;
+}
+
+td {
+    vertical-align: top;
+}
+
+.layout #td {
+    padding: 0.5em 0;
+}
+
+.layout th#title {
+    width: 30%;
+}
+
+.layout th#journal {
+    width: 10%;
+}
+
+.layout th#year {
+    width: 5%;
+}
+
+.layout th#keywords {
+    width: 15%;
+}
+
+.layout th#comments {
+    width: 2%;
+}
+
+.layout th#modify {
+    text-align: right;
+}
+
+.journal {
+    font-style: italic;
+}
+
+.volume {
+    font-weight: bold;
+}
+
+table.layout #results #col1 {
+    padding-top: 1em;
+    padding-left: 2em;
+    font-style: italic;
+}
+
+table.layout #results #col2 a{
+    text-decoration: underline;
+}
+
+table.layout #results td{
+    border-bottom: solid;
+}
+
+table.footer {
+    margin: 2em auto 0;
+}
+
+table.footer #version {
+    width: 33%;
+}
+
+table.footer #timer {
+    width: 34%;
+    text-align: center;
+}
+
+table.footer #copyright{
+    width: 33%;
+    text-align: right;
+}
+
+table.error {
+    margin: 2em auto 0;
+}
+
+table.error td {
+    padding: 2em;
+}
+
+table.login td, table.edit td, table.import td, table.tools td, table.info td, table.config td, table.entry td, table.export td, table.reindex td, table.duplicates td, table.authors td, table.keywords td{
+    padding: 0 0 0 1em;
+}
+
+table.duplicates #submenu{
+    text-align: center;
+}
+
+table.duplicates .divider {
+    border: solid 1px;
+}
+
+table.reindex th, table.reindex td{
+    padding-left: 1em;
+}
+
+.etal {
+    font-style: oblique;
+}
+
+table.splash #image {
+    height: 400px;
+    background-image: url('splash.gif');
+}
+
+table.entry p#comments {
+    width: 100%;
+    font-weight: bold;
+    font-style: italic;
+}
+
+table.entry #control {
+    text-align: right;
+}
+
+table.entry #biblcode {
+    display: inline-block;
+    margin-bottom: 1em;
+}
+
+table.info #col2 {
+    text-align: right;
+}
+
+table.info p {
+    width: 36em;
+}
+
+table.config #submenu, table.login #submenu, table.entry #submenu, table.export #submenu, table.edit #submenu, table.import #submenu{
+    text-align: right;
+}
+
+table.edit #submenu #delete {
+    margin-left: 0;
+}

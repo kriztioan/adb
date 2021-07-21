@@ -1,0 +1,62 @@
+body{
+  background: #4682b4;
+  color: #b0c4de;
+  font-family: Helvetica;
+  font-weight: bold;
+  font-size: 10pt;
+  margin: 0pt;
+}
+
+a{
+  color: #4682b4;
+  text-decoration: none;
+  background: #b0c4de ;
+  border-style: none; 
+}
+
+a.title{
+  font-weight: bold;
+}
+
+table{
+  width: 1000px;
+  border: 2px solid #b0c4de;
+}
+
+table.menu{
+  padding: 10px 3px;
+}
+
+table.layout{
+  padding: 3px;
+}
+
+.highlight{
+  background-color: yellow;
+}
+
+input.config{
+  width: 13cm;
+  color :#000080;
+}
+
+textarea.config{
+  width: 13cm;  
+}
+
+.select{
+  color :#000080;
+}
+
+.search{
+  color :#000080;
+}
+
+div.autocomplete{
+  visibility:hidden;
+  width:10cm;
+  border:solid 1px #b0c4de;
+  background: #4682b4;
+  position:absolute;
+  overflow:hidden;
+}

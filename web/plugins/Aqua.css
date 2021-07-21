@@ -1,0 +1,95 @@
+*{
+  font-family: Helvetica;
+}
+
+body{
+  background: #eeeeee;
+  font-size: 10pt;
+  margin: 0;
+}
+
+table{
+  background: url('Aqua/aqua.jpg');
+  border: 1px solid #aaaaaa;
+  width: 1000px;
+}
+
+table.menu{
+  padding: 10px 3px;
+}
+
+table.layout{
+  padding: 3px;
+}
+
+button{
+  font-weight: bold;
+  cursor: pointer;
+  font-family: Arial;
+  line-height: 22px;
+  font-size: 10px;
+  width: 60px;
+  height: 22px;
+  background: url('Aqua/button.png');
+  border-style: none;
+}
+
+a{
+  text-decoration: none;
+  color: #000000;
+}
+
+a.title{
+  font-weight: bold;
+}
+
+a.clean{
+  margin: 0;
+  font-size: 10pt;
+  float : none;
+  display: inline;
+  background: transparent;
+  border-style: none;
+  font-weight: normal;
+}
+a.clean:hover{
+  text-decoration:underline;
+}
+
+.menu{
+  border: 1px solid #aaaaaa;
+  background: url('Aqua/aqua.jpg') #ffffff repeat;
+  font-weight: normal;
+}
+
+.highlight{
+  background-color: yellow;
+}
+
+input.config{
+  color: #000000;
+  background-color: #ffffff;
+  width: 13cm;
+}
+
+textara.config{
+  width: 13cm;
+  background-color: #ffffff;
+}
+
+select{
+  background-color: #ffffff;
+}
+
+.search{
+  width: 6cm;
+}
+
+div.autocomplete{
+  visibility: hidden;
+  width: 10cm;
+  border: solid 1px #000000;
+  background: #ffffff;
+  float: left;
+  position: absolute;
+}
