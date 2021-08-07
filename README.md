@@ -10,6 +10,8 @@ There are a number of tools for organizing and maintaining `AdB`. These include 
 
 The look of `AdB` is theme-able, with a number of themes included by default.
 
+![Article Database in Action](ArticleDatabase.png "Article Database in Action")
+
 ## Usage
 
 Building `AdB` requires the following to be available and/or installed:
