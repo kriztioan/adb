@@ -250,6 +250,8 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
   }
 
   // get rid of the AdB's own keywords, type, biblcode and journal
+  std::unordered_map<std::string, std::string> mFields = record.mFields;
+
   static constexpr const char *AdBKeywords[] = {
       "ADScode", "ADSabstract",      "ADSfullpaper",
       "id",      "keywords",         "URL",
@@ -257,9 +259,9 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
       "journal", "doicrossrefstatus"};
 
   for (const auto *s : AdBKeywords) {
-    auto it = record.mFields.find(s);
-    if (it != record.mFields.end()) {
-      record.mFields.erase(it);
+    auto it = mFields.find(s);
+    if (it != mFields.end()) {
+      mFields.erase(it);
     }
   }
 
@@ -270,7 +272,7 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
          << std::setw(10) << std::setiosflags(std::ios::right) << "journal"
          << " = " << journal;
 
-  for (const auto &field : record.mFields) {
+  for (const auto &field : mFields) {
     if (!field.second.empty()) {
       ostr << ",\n"
            << std::setw(10) << std::setiosflags(std::ios::right) << field.first
