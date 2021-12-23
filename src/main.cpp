@@ -28,7 +28,7 @@ static std::string
              "$data=\"data/database.dat\"\n"
              "$doicrossrefscore=\"19.0\"\n"
              "$doicrossrefurl=\"api.crossref.org\"\n"
-             "$doilookupurl=\"data.crossref.org\"\n"
+             "$doilookupurl=\"api.crossref.org/v1/works/\"\n"
              "$doiurl=\"dx.doi.org\"\n"
              "$expire=\"31536000\"\n"
              "$key=\"biblcode\"\n"

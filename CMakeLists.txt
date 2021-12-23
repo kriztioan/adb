@@ -12,7 +12,7 @@ pkg_search_module(JEMALLOC REQUIRED jemalloc)
 include_directories(${JEMALLOC_INCLUDE_DIRS})
 link_directories(${JEMALLOC_LIBRARY_DIRS})
 
-set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl@1.1/1.1.1l/)
+set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl@1.1/1.1.1m/)
 find_package(OpenSSL)
 include_directories(${OPENSSL_INCLUDE_DIR})
 

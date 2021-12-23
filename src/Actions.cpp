@@ -1704,10 +1704,10 @@ void QueryDOI(HTTP &http, Preferences &prefs) {
 
   std::string doi(http.post.mFields["doi"]),
       url(prefs.preferences.mFields["doilookupurl"] + "/" +
-          Coders::URLEncode(doi));
+          Coders::URLEncode(doi) + "/transform");
 
   std::vector<std::string> headers = {
-      "Accept: application/x-bibtex; charset=utf-8"};
+      "Accept: text/bibliography; style=bibtex"};
 
   std::string bibtex(http.SecureGet(url, headers, 443,
                                     prefs.preferences.mFields["pem"].c_str()));
