@@ -1476,11 +1476,11 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
       << "      <input name=\"archive\" type=\"checkbox\""
       << (mFields["archive"] == "on" ? " checked=\"checked\"" : "")
       << " /> Archive"
-      << (id_str == "-1"
-              ? " (<i>downloads from ADS, or, when specified uses Upload "
-                "file</i>)\n"
-              : "d <i>" + HTML::Filesize(prefs.preferences.mFields["base"] +
-                                         "archive/" + id_str + ".pdf"))
+      << (mFields["archive"] == "on"
+              ? "d <i>" + HTML::Filesize(prefs.preferences.mFields["base"] +
+                                         "archive/" + id_str + ".pdf")
+              : " (<i>downloads from ADS, or, when specified uses Upload "
+                "file</i>)\n")
       << "</i>\n"
       << "    </td>\n"
       << "  </tr>\n"
