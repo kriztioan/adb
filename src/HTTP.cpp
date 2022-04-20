@@ -258,7 +258,7 @@ std::string HTTP::SecureGet(std::string_view url,
   char buff[block_size];
 
   if (!ctx) {
-    ctx = SSL_CTX_new(SSLv23_method());
+    ctx = SSL_CTX_new(TLS_method());
     if (!ctx) {
       return (std::string());
     }
@@ -278,6 +278,8 @@ std::string HTTP::SecureGet(std::string_view url,
       goto fail;
     }
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+
+    SSL_set_tlsext_host_name(ssl, hostname.c_str());
 
     struct hostent *remote_host = gethostbyname(hostname.c_str());
     if (!remote_host) {
@@ -303,7 +305,7 @@ std::string HTTP::SecureGet(std::string_view url,
 
     BIO_ADDR_free(bio_addr);
 
-    if(BIO_do_connect_timeout(bio, &timeout) != 1) {
+    if (BIO_do_connect_timeout(bio, &timeout) != 1) {
       goto fail;
     }
 
@@ -331,12 +333,14 @@ std::string HTTP::SecureGet(std::string_view url,
 
   request = ss.str();
 
-  BIO_puts(bio, request.c_str());
+  if (BIO_puts(bio, request.c_str()) <= 0) {
+    goto fail;
+  }
 
   int bytes_recv;
   while ((bytes_recv = BIO_read(bio, buff, block_size - 1))) {
     if (bytes_recv == -1) {
-      return (std::string());
+      goto fail;
     }
     buff[bytes_recv] = '\0';
     response.append(buff);
@@ -346,7 +350,8 @@ std::string HTTP::SecureGet(std::string_view url,
     return (std::string());
   }
 
-  return (response.substr(response.find("\r\n\r\n") + 4));
+  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                              : std::string());
 
 fail:
   BIO_free_all(bio);
@@ -379,7 +384,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
   char buff[block_size];
 
   if (!ctx) {
-    ctx = SSL_CTX_new(SSLv23_method());
+    ctx = SSL_CTX_new(TLS_method());
     if (!ctx) {
       return (std::string());
     }
@@ -399,6 +404,8 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
       goto fail;
     }
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+
+    SSL_set_tlsext_host_name(ssl, hostname.c_str());
 
     struct hostent *remote_host = gethostbyname(hostname.c_str());
     if (!remote_host) {
@@ -454,7 +461,10 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
 
   request = ss.str();
 
-  BIO_puts(bio, request.c_str());
+  if(BIO_puts(bio, request.c_str()) <= 0) {
+
+    goto fail;
+  };
 
   int bytes_recv;
 
@@ -470,7 +480,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
     return (std::string());
   }
 
-  return (response.substr(response.find("\r\n\r\n") + 4));
+  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4) : std::string());
 
 fail:
   BIO_free_all(bio);
