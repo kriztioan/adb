@@ -82,7 +82,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed) {
 
   std::string data("id=-1");
 
-  char buff[2048];
+  char buff[4096];
   size_t buff_offset = 0;
 
   // part I
