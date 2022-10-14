@@ -1703,7 +1703,7 @@ void QueryADS(HTTP &http, Preferences &prefs) {
 void QueryDOI(HTTP &http, Preferences &prefs) {
 
   std::string doi(http.post.mFields["doi"]),
-      url(prefs.preferences.mFields["doilookupurl"] + "/" +
+      url(prefs.preferences.mFields["doilookupurl"] + "/v1/works/" +
           Coders::URLEncode(doi) + "/transform");
 
   std::vector<std::string> headers = {
@@ -1932,14 +1932,15 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
       << "  </tr>\n"
       << "  <tr>\n"
       << "    <td>\n"
-      << "      Url for Display\n"
+      << "      Url for display\n"
       << "    </td>\n"
       << "    <td>\n"
       << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
          "autocomplete=\"off\" class=\"config\" type=\"text\" "
          "name=\"doiurl\" "
          "value=\""
-      << prefs.preferences.mFields["doiurl"] << "\" /> <i>no leading http</i>\n"
+      << prefs.preferences.mFields["doiurl"]
+      << "\" /> <i>no leading http(s)</i>\n"
       << "    </td>\n"
       << "  </tr>\n"
       << "  <tr>\n"
@@ -1951,29 +1952,12 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
          "autocomplete=\"off\" class=\"config\" type=\"text\" "
          "name=\"doilookupurl\" value=\""
       << prefs.preferences.mFields["doilookupurl"]
-      << "\" /> <i>no leading http</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>DOI CrossRef</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Url\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"doicrossrefurl\" value=\""
-      << prefs.preferences.mFields["doicrossrefurl"]
       << "\" /> <i>no leading http(s)</i>\n"
       << "    </td>\n"
       << "  </tr>\n"
       << "  <tr>\n"
       << "    <td>\n"
-      << "      Score\n"
+      << "      CrossRef score\n"
       << "    </td>\n"
       << "    <td>\n"
       << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
@@ -1982,6 +1966,11 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
       << prefs.preferences.mFields["doicrossrefscore"] << "\" />\n"
       << "    </td>\n"
       << "  </tr>\n"
+      << "  <tr>\n"
+      << "    <td colspan=\"2\">\n"
+      << "      <h2>SSL</h2>\n"
+      << "    </td>\n"
+      << "  <tr>\n"
       << "  <tr>\n"
       << "    <td>\n"
       << "      PEM\n"
@@ -2615,15 +2604,16 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
       author = author.substr(0, pos);
     }
     std::string url(
-        prefs.preferences.mFields["doicrossrefurl"] +
-        "/works?rows=1&sort=score&order=desc" +
+        prefs.preferences.mFields["doilookupurl"] +
+        "/v1/works?rows=1&sort=score&order=desc" +
         "&query.bibliographic=" + Coders::URLEncode(record.mFields["title"]) +
         "&query.author=" + Coders::URLEncode(author) +
         "&filter=from-pub-date:" + record.mFields["year"] + ",until-pub-date:" +
         record.mFields["year"] + "&select=DOI,score" + "&mailto=" CONTACT);
 
     std::string crossref(
-        http.SecureGet(url, {}, 443, prefs.preferences.mFields["pem"].c_str()));
+        http.SecureGet(url, {"Accept: application/json"}, 443,
+                       prefs.preferences.mFields["pem"].c_str()));
 
     std::cout << "  <tr>\n"
               << "    <td>\n"
@@ -2633,13 +2623,18 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
               << "    </td>\n"
               << "    <td>\n";
 
+    std::string::size_type open = crossref.find_first_of("{"),
+                           close = crossref.find_last_of("}");
+
     rapidjson::Document json;
-    if (json.Parse(crossref.c_str()).HasParseError()) {
+    if (json.Parse(crossref.substr(open, close - open + 1).c_str())
+            .HasParseError()) {
       std::string value("JSON parse error (");
-      value.append(GetParseError_En(json.GetParseError())) + ')';
+      value.append(GetParseError_En(json.GetParseError()));
+      value.append(")");
+
       record.mFields["doicrossrefstatus"] = value;
-      std::cout << "      json parse error ("
-                << GetParseError_En(json.GetParseError()) << ")\n"
+      std::cout << value << "\n"
                 << "    </td>\n"
                 << "  </tr>\n";
       continue;
@@ -2650,7 +2645,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
         json["message"]["total-results"].GetInt() == 0) {
       record.mFields["doicrossrefstatus"] =
           "no matching crossref found (no results)";
-      std::cout << "      no matching crossref found (no results)\n"
+      std::cout << record.mFields["doicrossrefstatus"] << "\n"
                 << "    </td>\n"
                 << "  </tr>\n";
       continue;
@@ -2664,13 +2659,13 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
         !json["message"]["items"][0].HasMember("score")) {
       record.mFields["doicrossrefstatus"] =
           "no matching crossref found (malformed message)";
-      std::cout << "      no matching crossref found (malformed message)\n"
+      std::cout << record.mFields["doicrossrefstatus"] << "\n"
                 << "    </td>\n"
                 << "  </tr>\n";
       continue;
     }
 
-    doi = json["message"]["items"][0]["DOI"].GetString();
+    doi = std::string("{") + json["message"]["items"][0]["DOI"].GetString() + "}";
 
     float score = json["message"]["items"][0]["score"].GetFloat();
     if (score < need_score) {
@@ -2678,9 +2673,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
       value.append(doi) + "] (" + std::to_string(score) + '<' +
           std::to_string(need_score) + ')';
       record.mFields["doicrossrefstatus"] = value;
-      std::cout << "      score too low [" << doi << "] (" << std::fixed
-                << std::showpoint << std::setprecision(1) << score << "<"
-                << need_score << ")\n"
+      std::cout << record.mFields["doicrossrefstatus"] << "\n"
                 << "    </td>\n"
                 << "  </tr>\n";
       continue;
