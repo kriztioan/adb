@@ -16,6 +16,7 @@ toggle['TECHREPORT']     = Array(true, false, false, false, true, false, false, 
 toggle['MISC']           = Array(true, false, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false, true, true, true,false);
 toggle['MANUAL']         = Array(true, false, false, true, true, false, true, false, false, false, false, true, false, false, false, false, false, true, true, true, false);
 toggle['UNPUBLISHED']    = Array(true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, true, true, true, true);
+toggle['SOFTWARE']       = Array(true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, true, true, true, true, true);
 
 function evalType(obj){
 
