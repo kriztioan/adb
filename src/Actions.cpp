@@ -1082,9 +1082,9 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
   }
 
   std::string type(mFields["type"]),
-      options("ARTICLE&INPROCEEDINGS&PROCEEDINGS&BOOK&BOOKLET&INBOOK&"
-              "INCOLLECTION&"
-              "MASTERTHESIS&PHDTHESIS&TECHREPORT&MISC&MANUAL&UNPUBLISHED");
+      options(
+          "ARTICLE&INPROCEEDINGS&PROCEEDINGS&BOOK&BOOKLET&INBOOK&INCOLLECTION&"
+          "MASTERTHESIS&PHDTHESIS&TECHREPORT&MISC&MANUAL&UNPUBLISHED&SOFTWARE");
 
   auto uniq = d.UniqueValuesForKey("keywords", split_on_comma);
 
