@@ -198,7 +198,7 @@ std::string HTTP::Get(std::string_view url, std::vector<std::string> headers,
   } else {
     ss << '/';
   }
-  ss << " HTTP/1.1\r\nHost: " << hostname << "\r\n";
+  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
       ss << h << "\r\n";
@@ -322,7 +322,7 @@ std::string HTTP::SecureGet(std::string_view url,
   } else {
     ss << '/';
   }
-  ss << " HTTP/1.1\r\nHost: " << hostname << "\r\n";
+  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
       ss << h << "\r\n";
@@ -448,7 +448,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
   } else {
     ss << '/';
   }
-  ss << " HTTP/1.1\r\nHost: " << hostname << "\r\n";
+  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
       ss << h << "\r\n";

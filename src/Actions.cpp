@@ -2612,8 +2612,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
         record.mFields["year"] + "&select=DOI,score" + "&mailto=" CONTACT);
 
     std::string crossref(
-        http.SecureGet(url, {"Accept: application/json"}, 443,
-                       prefs.preferences.mFields["pem"].c_str()));
+        http.SecureGet(url, {}, 443, prefs.preferences.mFields["pem"].c_str()));
 
     std::cout << "  <tr>\n"
               << "    <td>\n"
@@ -2623,12 +2622,8 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
               << "    </td>\n"
               << "    <td>\n";
 
-    std::string::size_type open = crossref.find_first_of("{"),
-                           close = crossref.find_last_of("}");
-
     rapidjson::Document json;
-    if (json.Parse(crossref.substr(open, close - open + 1).c_str())
-            .HasParseError()) {
+    if (json.Parse(crossref.c_str()).HasParseError()) {
       std::string value("JSON parse error (");
       value.append(GetParseError_En(json.GetParseError()));
       value.append(")");
@@ -2665,7 +2660,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
       continue;
     }
 
-    doi = std::string("{") + json["message"]["items"][0]["DOI"].GetString() + "}";
+    doi = json["message"]["items"][0]["DOI"].GetString();
 
     float score = json["message"]["items"][0]["score"].GetFloat();
     if (score < need_score) {
@@ -2679,7 +2674,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
       continue;
     }
 
-    record.mFields["doi"] = doi;
+    record.mFields["doi"] = std::string("{") + doi + "}";
 
     std::cout << doi << "\n"
               << "    </td>\n"
