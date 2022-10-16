@@ -2822,7 +2822,7 @@ void Export(HTTP &http, Preferences &prefs) {
     }
   } else {
     if (format == "msword") {
-      MSWord::Footer(ostr);
+      MSWord::Header(ostr);
     }
     std::vector<std::string> vIdentifiers =
         split_on_comma(http.post.mFields["select"]);
