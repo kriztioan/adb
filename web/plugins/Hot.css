@@ -43,8 +43,11 @@ input.config{
 }
 
 textarea.config{
-  width: 13cm;
+  color: #ffa54f;
   background-color: #a52a2a;
+  border: 1px solid #ffa54f;
+  width: 13cm;
+  min-height: 4em;
 }
 
 .select{

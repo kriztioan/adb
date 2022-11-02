@@ -73,7 +73,7 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
   }
 
   ostr << '\"' << Coders::LaTeXDecode(record.mFields["title"]) << "\", "
-       << record.mFields["year"] << ", ";
+       << Coders::LaTeXDecode(record.mFields["year"]) << ", ";
 
   if (type == "ARTICLE") {
 

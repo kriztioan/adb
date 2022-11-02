@@ -69,12 +69,16 @@ a.clean:hover{
 input.config{
   color: #000000;
   background-color: #ffffff;
+  border: inset 1px #000000;
   width: 13cm;
 }
 
-textara.config{
-  width: 13cm;
+textarea.config{
+  color: #000000;
   background-color: #ffffff;
+  border: inset 1px #000000;
+  width: 13cm;
+  min-height: 4em;
 }
 
 select{

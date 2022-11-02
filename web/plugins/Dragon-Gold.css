@@ -67,11 +67,14 @@ table.menu{
 input.config{
   width : 13cm;
   background-color : #c0c0c0;
+  border: inset 1px #000000;
 }
 
 textarea.config{
   width : 13cm;
   background-color : #c0c0c0;
+  border: inset 1px #000000;
+  min-height: 4em;
 }
 
 input.file{

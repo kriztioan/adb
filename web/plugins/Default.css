@@ -41,7 +41,8 @@ input.config{
 }
 
 textarea.config{
-  width: 13cm;  
+  width: 13cm;
+  min-height: 4em; 
 }
 
 .select{

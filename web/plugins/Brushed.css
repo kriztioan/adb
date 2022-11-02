@@ -49,6 +49,7 @@ table{
 .highlight{
   background-color: yellow;
 }
+
 input.config{
   color: #000000;
   background-color: #ffffff;
@@ -57,8 +58,11 @@ input.config{
 }
 
 textarea.config{
-  width: 13cm;
+  color: #000000;
   background-color: #ffffff;
+  border: 1px inset #000000;
+  width: 13cm;
+  min-height: 4em;
 }
 
 select{
