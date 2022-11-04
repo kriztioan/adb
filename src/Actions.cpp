@@ -12,7 +12,7 @@
 std::string list_themes(const std::string &directory) {
   std::string files;
   if (std::filesystem::is_directory(directory)) {
-    for (auto &p : std::filesystem::directory_iterator(directory)) {
+    for (const auto &p : std::filesystem::directory_iterator(directory)) {
       if (p.path().extension() == ".css") {
         if (!files.empty()) {
           files += '&';
@@ -163,7 +163,6 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   std::string ADSfullpaper;
   it = record.mFields.find("ADSfullpaper");
   if (it != not_found && it->second == "on") {
-    ADSfullpaper = it->second;
     if (!ADScode.empty()) {
       ADSfullpaper = "      <button id=\"pdf\" title=\"ADS PDF\" "
                      "type=\"button\" onclick=\"gotoURL('http://" +
@@ -743,7 +742,6 @@ void DisplayEntry(HTTP &http, Preferences &prefs) {
   std::string ADSfullpaper;
   it = record->mFields.find("ADSfullpaper");
   if (it != not_found && it->second == "on") {
-    ADSfullpaper = it->second;
     if (!ADScode.empty()) {
       ADSfullpaper = "      <button id=\"pdf\" title=\"ADS PDF\" "
                      "type=\"button\" onclick=\"gotoURL('http://" +
@@ -1534,14 +1532,14 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
       "summary",      "note",        "ADSfullpaper", "ADSabstract",  "URL",
       "dossier",      "comments",    "archive",      "series"};
 
-  for (auto *s : usedKeys) {
+  for (const auto *s : usedKeys) {
     auto f = mFields.find(s);
     if (f != mFields.end()) {
       mFields.erase(f);
     }
   }
 
-  for (auto &field : mFields) {
+  for (const auto &field : mFields) {
 
     std::cout << "  <tr>\n"
               << "    <td>\n"
@@ -1550,7 +1548,7 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
               << "    <td>\n"
               << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
                  "autocomplete=\"off\" id=\""
-              << field.first << "\" class=\"config\" name=\"" << field.second
+              << field.first << "\" class=\"config\" name=\"" << field.first
               << "\" type=\"text\" value=\"" << Coders::HTMLEncode(field.second)
               << "\" /> <button id=\"del\" title=\"Del\" type=\"button\" "
                  "onclick=\"delExtraKeyValuePair(this);\">Del</button>\n"
@@ -2715,7 +2713,7 @@ void Delete(HTTP &http, Preferences &prefs) {
     std::vector<std::string> vIdentifiers =
         split_on_comma(http.post.mFields["select"]);
 
-    for (auto &id_str : vIdentifiers) {
+    for (const auto &id_str : vIdentifiers) {
       if (!helper(id_str)) {
         return;
       }

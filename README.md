@@ -21,6 +21,7 @@ Building `AdB` requires the following to be available and/or installed:
 3. `jemalloc`
 4. `openssl`
 5. `rapidjson`
+6. `pkg-config`
 
 The web application is build with:
 
@@ -45,8 +46,8 @@ and start using the application.
 
 ## Notes
 
-1. The `GNU` C++ compiler is hardcoded to `g++-11` in `CMakeLists.txt`, change if needed.
-2. The `OPENSSL_ROOT_DIR` is hardcoded to `/usr/local/Cellar/openssl@1.1/1.1.1k/` in `CMakeLists.txt`, change if needed.
+1. The `GNU` C++ compiler is hardcoded to `g++-12` in `CMakeLists.txt`, change if needed.
+2. The `OPENSSL_ROOT_DIR` is hardcoded to `/usr/local/Cellar/openssl@3/3.0.7` in `CMakeLists.txt`, change if needed.
 3. The PEM certificate file used by `AdB` defaults to `/private/etc/ssl/cert.pem`, change if needed under `Config→DOI CrossRef→PEM`.
 
 ## BSD-3 License
