@@ -64,9 +64,7 @@ bool Database::Commit() {
 
   static char tmp[] = "./tmp/adb.XXXXXX";
 
-  mktemp(tmp);
-
-  int fd = open(tmp, O_CREAT | O_WRONLY | O_EXLOCK | O_TRUNC);
+  int fd = mkstemp(tmp);
   if (fd == -1) {
     return false;
   }
