@@ -1637,8 +1637,8 @@ void Update(HTTP &http, Preferences &prefs) {
       std::string cmd(
           prefs.preferences.mFields["base"] + "csh/AdBArchiver.csh " +
           prefs.preferences.mFields["base"] + " " + "'https://" +
-          prefs.preferences.mFields["adsurl"] + "/link_gateway/" +
-          http.post.mFields["ADScode"] + "/PUB_PDF' " + TargetPath.string());
+          prefs.preferences.mFields["adsurl"] + "/pdf/" +
+          http.post.mFields["ADScode"] + "' " + TargetPath.string());
 
       if (system(cmd.c_str()) == -1) {
         return;
