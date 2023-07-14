@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.2.0)
 
 project (AdB)
 
-set(CMAKE_CXX_COMPILER /usr/local/bin/g++-12)
+set(CMAKE_CXX_COMPILER /usr/local/bin/g++-13)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-flto -Wall -Wextra -O3 -march=native -fno-exceptions")
 
@@ -12,7 +12,7 @@ pkg_search_module(JEMALLOC REQUIRED jemalloc)
 include_directories(${JEMALLOC_INCLUDE_DIRS})
 link_directories(${JEMALLOC_LIBRARY_DIRS})
 
-set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl@3/3.1.0/)
+set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl@3/3.1.1_1/)
 find_package(OpenSSL)
 include_directories(${OPENSSL_INCLUDE_DIR})
 

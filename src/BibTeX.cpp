@@ -80,7 +80,7 @@ std::string BibTeX::SplitKeywords(const std::string &keywords,
 
 Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed) {
 
-  std::string data("id=-1");
+  std::string data("id=-1&");
 
   char buff[4096];
   size_t buff_offset = 0;
