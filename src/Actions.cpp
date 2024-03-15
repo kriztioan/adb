@@ -357,16 +357,18 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
   std::cout << "<form name=\"entry\" action=\"" << http.self
             << "?action=delete&amp;id=-1\" method=\"post\">\n"
             << "<table class=\"layout list\">\n"
-            << "  <col id=\"col1\" />\n"
-            << "  <col id=\"col2\" />\n"
-            << "  <col id=\"col3\" />\n"
-            << "  <col id=\"col4\" />\n"
-            << "  <col id=\"col5\" />\n"
-            << "  <col id=\"col6\" />\n"
-            << "  <col id=\"col7\" />\n"
-            << "  <col id=\"col8\" />\n"
-            << "  <col id=\"col9\" />\n"
-            << "  <col id=\"col10\" />\n"
+            << "  <colgroup>\n"
+            << "    <col id=\"col1\" />\n"
+            << "    <col id=\"col2\" />\n"
+            << "    <col id=\"col3\" />\n"
+            << "    <col id=\"col4\" />\n"
+            << "    <col id=\"col5\" />\n"
+            << "    <col id=\"col6\" />\n"
+            << "    <col id=\"col7\" />\n"
+            << "    <col id=\"col8\" />\n"
+            << "    <col id=\"col9\" />\n"
+            << "    <col id=\"col10\" />\n"
+            << "  </colgroup>\n"
             << "  <tr id=\"submenu\">\n"
             << "    <td id=\"col1\" colspan=\"10\">\n"
             << "      <button id=\"delete\" title=\"Delete selected entries\" "
@@ -2672,10 +2674,10 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     float score = json["message"]["items"][0]["score"].GetFloat();
     if (score < need_score) {
       std::string value("score too low [");
-      value.append(doi) + "] (" + std::to_string(score) + '<' +
-          std::to_string(need_score) + ')';
+      value = value.append(doi) + "] (" + std::to_string(score) + '<' +
+              std::to_string(need_score) + ')';
       record.mFields["doicrossrefstatus"] = value;
-      std::cout << record.mFields["doicrossrefstatus"] << "\n"
+      std::cout << record.mFields["doicrossrefstatus"] << '\n'
                 << "    </td>\n"
                 << "  </tr>\n";
       continue;
