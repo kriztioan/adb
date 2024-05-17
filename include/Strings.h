@@ -28,7 +28,6 @@ public:
   Record strings;
 
 private:
-  long id;
   std::filesystem::path filename;
   bool state;
   char *data = nullptr;

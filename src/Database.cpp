@@ -8,6 +8,7 @@
  ***********************************************/
 
 #include "Database.h"
+#include <fstream>
 
 Database::Database(const std::filesystem::path &f) : filename(f) {
 
@@ -26,8 +27,8 @@ Database::Database(const std::filesystem::path &f) : filename(f) {
 
   size = f_stat.st_size;
 
-  data = (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE, fd, 0);
+  data =
+      (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if (!data) {
     return;
@@ -64,27 +65,25 @@ bool Database::Commit() {
 
   static char tmp[] = "./tmp/adb.XXXXXX";
 
-  int fd = mkstemp(tmp);
-  if (fd == -1) {
+  if (!mkstemp(tmp)) {
     return false;
   }
 
-  __gnu_cxx::stdio_filebuf<char> ofbuf(fd, std::ios::out);
-  std::ostream ostr(&ofbuf);
-  if (ostr.fail()) {
+  std::fstream ofstr(tmp);
+  if (ofstr.fail()) {
     return false;
   }
 
-  ostr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
+  ofstr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
   for (auto &r : vRecords) {
     auto f = r.mFields.begin();
-    ostr << f->first << '=' << Coders::URLEncode(f->second);
+    ofstr << f->first << '=' << Coders::URLEncode(f->second);
     for (++f; f != r.mFields.end(); ++f) {
-      ostr << '&' << f->first << '=' << Coders::URLEncode(f->second);
+      ofstr << '&' << f->first << '=' << Coders::URLEncode(f->second);
     }
-    ostr << "\n";
+    ofstr << "\n";
   }
-  ofbuf.close();
+  ofstr.close();
 
   rename(tmp, filename.c_str());
 

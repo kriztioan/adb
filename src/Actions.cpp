@@ -389,8 +389,7 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
             << http.self
             << "?action=exportText&amp;id=-1';document.entry.submit();\">"
                "Export as Text</button>\n"
-            << "    </td>"
-            << "\n"
+            << "    </td>" << "\n"
             << "  </tr>\n"
             << "  <tr>\n"
             << "    <th id=\"select\">\n"
@@ -552,8 +551,7 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
             << http.self
             << "?action=exportText&amp;id=-1';document.entry.submit();\">"
                "Export as Text</button>\n"
-            << "    </td>"
-            << "\n"
+            << "    </td>" << "\n"
             << "  </tr>\n"
             << "</table>\n"
             << "</form>\n"
@@ -2312,8 +2310,7 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
   std::cout << "<table class=\"layout keywords\">\n"
             << "  <tr>\n"
             << "    <td id=\"col1\" colspan=\"3\">\n"
-            << "      <h1>Keywords"
-            << " (" << n_uniq << ")</h1>\n"
+            << "      <h1>Keywords" << " (" << n_uniq << ")</h1>\n"
             << "    </td>\n"
             << "  </tr>\n"
             << "  <tr>\n"
@@ -2384,8 +2381,7 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
   std::cout << "<table class=\"layout authors\">\n"
             << "  <tr>\n"
             << "    <td id=\"col1\" colspan=\"3\">\n"
-            << "      <h1>Authors"
-            << " (" << n_uniq << ")</h1>\n"
+            << "      <h1>Authors" << " (" << n_uniq << ")</h1>\n"
             << "    </td>\n"
             << "  </tr>\n"
             << "  <tr>\n"
@@ -2456,8 +2452,7 @@ void DisplayDuplicatesForm(HTTP &http, Preferences &prefs) {
             << "<table class=\"layout duplicates\">\n"
             << "  <tr>\n"
             << "   <td colspan=\"10\">\n"
-            << "     <h1>Duplicates</h1>"
-            << "   </td>\n"
+            << "     <h1>Duplicates</h1>" << "   </td>\n"
             << "  </tr>\n"
             << "  <tr>\n"
             << "    <td id=\"submenu\" colspan=\"10\">\n"
@@ -2787,14 +2782,8 @@ void Export(HTTP &http, Preferences &prefs) {
   std::filesystem::path filename(prefs.preferences.mFields["base"] +
                                  prefs.preferences.mFields[format]);
 
-  int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_EXLOCK | O_TRUNC);
-  if (fd == -1) {
-    return;
-  }
-
-  __gnu_cxx::stdio_filebuf<char> ofbuf(fd, std::ios::out);
-  std::ostream ostr(&ofbuf);
-  if (ostr.fail()) {
+  std::ofstream ofstr(filename);
+  if (ofstr.fail()) {
     return;
   }
 
@@ -2802,6 +2791,7 @@ void Export(HTTP &http, Preferences &prefs) {
              prefs.preferences.mFields["data"]);
 
   if (!d.good()) {
+    ofstr.close();
     return;
   }
 
@@ -2814,50 +2804,50 @@ void Export(HTTP &http, Preferences &prefs) {
   if (id_str != "-1") {
     if (format == "bibtex") {
       BibTeX::Setup setup = {prefs.preferences, s.strings};
-      d.ExportRecord(id_str, ostr, setup, BibTeX::Export);
+      d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
       ++n_export;
     } else if (format == "msword") {
-      MSWord::Header(ostr);
+      MSWord::Header(ofstr);
       MSWord::Setup setup = {prefs.preferences, s.strings};
-      d.ExportRecord(id_str, ostr, setup, MSWord::Export);
-      MSWord::Footer(ostr);
+      d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
+      MSWord::Footer(ofstr);
       ++n_export;
     } else if (format == "text") {
       Text::Setup setup = {prefs.preferences, s.strings};
-      d.ExportRecord(id_str, ostr, setup, Text::Export);
+      d.ExportRecord(id_str, ofstr, setup, Text::Export);
       ++n_export;
     } else {
       return;
     }
   } else {
     if (format == "msword") {
-      MSWord::Header(ostr);
+      MSWord::Header(ofstr);
     }
     std::vector<std::string> vIdentifiers =
         split_on_comma(http.post.mFields["select"]);
     for (const auto &id_str : vIdentifiers) {
       if (format == "bibtex") {
         BibTeX::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ostr, setup, BibTeX::Export);
+        d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
         ++n_export;
       } else if (format == "msword") {
         MSWord::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ostr, setup, MSWord::Export);
+        d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
         ++n_export;
       } else if (format == "text") {
         Text::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ostr, setup, Text::Export);
+        d.ExportRecord(id_str, ofstr, setup, Text::Export);
         ++n_export;
       } else {
         return;
       }
     }
     if (format == "msword") {
-      MSWord::Footer(ostr);
+      MSWord::Footer(ofstr);
     }
   }
 
-  ofbuf.close();
+  ofstr.close();
 
   std::cout << "  <tr>\n"
             << "    <td>\n"

@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 3.5.0)
 
 project (AdB)
 
-set(CMAKE_CXX_COMPILER /usr/local/bin/g++-13)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-flto -Wall -Wextra -O3 -march=native -fno-exceptions")
 

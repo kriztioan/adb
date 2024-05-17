@@ -11,9 +11,9 @@
 #define DATABASE_H
 
 #include "Record.h"
-#include <ext/stdio_filebuf.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <fstream>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -21,7 +21,7 @@
 
 #include <algorithm>
 
-//#include <memory_resource>
+// #include <memory_resource>
 
 class Database {
 public:
@@ -36,10 +36,9 @@ public:
   bool RemoveRecord(std::string_view id_str);
 
   template <typename T>
-  bool ExportRecord(std::string_view id_str, std::ostream &ostr,
-                              T &user_data,
-                              bool (*parser)(Record &record, std::ostream &ostr,
-                                             T &user_data)) {
+  bool ExportRecord(std::string_view id_str, std::ostream &ostr, T &user_data,
+                    bool (*parser)(Record &record, std::ostream &ostr,
+                                   T &user_data)) {
     for (auto &r : vRecords) {
       if (r.mFields.at("id") == id_str) {
         if (!parser(r, ostr, user_data)) {
@@ -60,7 +59,7 @@ public:
 
   std::vector<Record> vRecords;
 
-  //std::pmr::vector<Record> vRecords{&pool};
+  // std::pmr::vector<Record> vRecords{&pool};
 
 private:
   long id;
