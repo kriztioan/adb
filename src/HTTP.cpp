@@ -461,7 +461,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
 
   request = ss.str();
 
-  if(BIO_puts(bio, request.c_str()) <= 0) {
+  if (BIO_puts(bio, request.c_str()) <= 0) {
 
     goto fail;
   };
@@ -480,7 +480,8 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
     return (std::string());
   }
 
-  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4) : std::string());
+  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                              : std::string());
 
 fail:
   BIO_free_all(bio);

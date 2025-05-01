@@ -10,11 +10,11 @@
 #ifndef HTML_H
 #define HTML_H
 
+#include <filesystem>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <filesystem>
-#include <iomanip>
 
 namespace HTML {
 

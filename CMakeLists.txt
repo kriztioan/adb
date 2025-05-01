@@ -1,9 +1,9 @@
-cmake_minimum_required (VERSION 3.5.0)
+cmake_minimum_required (VERSION 4.0.1)
 
 project (AdB)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-flto -Wall -Wextra -O3 -march=native -fno-exceptions")
+set(CMAKE_CXX_FLAGS "-flto -Wall -Wextra -O3 -march=native -mtune=native -fno-exceptions")
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(JEMALLOC REQUIRED jemalloc)

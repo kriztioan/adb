@@ -60,7 +60,6 @@ private:
   std::string data;
   BIO *bio = nullptr;
   SSL_CTX *ctx = nullptr;
-
 };
 
 int BIO_do_connect_timeout(BIO *bio, struct timeval *timeout);

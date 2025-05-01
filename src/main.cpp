@@ -17,30 +17,29 @@
 
 #include "config.h"
 
-static std::string
-    defaults("$abbreviation=\"data/AAS.abr\"\n"
-             "$administrator=\"christiaanboersma@hotmail.com\"\n"
-             "$adsurl=\"ui.adsabs.harvard.edu\"\n"
-             "$adstoken=\"\"\n"
-             "$base=\"./\"\n"
-             "$baseurl=\"http://localhost/adb/\"\n"
-             "$bibtex=\"data/bibliography.bib\"\n"
-             "$data=\"data/database.dat\"\n"
-             "$doicrossrefscore=\"19.0\"\n"
-             "$doilookupurl=\"api.crossref.org\"\n"
-             "$doiurl=\"dx.doi.org\"\n"
-             "$expire=\"31536000\"\n"
-             "$key=\"biblcode\"\n"
-             "$msword=\"Sources.xml\"\n"
-             "$nauthors=\"3\"\n"
-             "$pem=\"/private/etc/ssl/cert.pem\"\n"
-             "$plugins=\"plugins/\"\n"
-             "$scheme=\"Default\"\n"
-             "$splash=\"true\"\n"
-             "$table=\"true\"\n"
-             "$text=\"data/references.txt\"\n"
-             "$updates=\"false\"\n"
-             "$username=\"user\"\n");
+static std::string defaults("$abbreviation=\"data/AAS.abr\"\n"
+                            "$administrator=\"christiaanboersma@hotmail.com\"\n"
+                            "$adsurl=\"ui.adsabs.harvard.edu\"\n"
+                            "$adstoken=\"\"\n"
+                            "$base=\"./\"\n"
+                            "$baseurl=\"http://localhost/adb/\"\n"
+                            "$bibtex=\"data/bibliography.bib\"\n"
+                            "$data=\"data/database.dat\"\n"
+                            "$doicrossrefscore=\"19.0\"\n"
+                            "$doilookupurl=\"api.crossref.org\"\n"
+                            "$doiurl=\"dx.doi.org\"\n"
+                            "$expire=\"31536000\"\n"
+                            "$key=\"biblcode\"\n"
+                            "$msword=\"Sources.xml\"\n"
+                            "$nauthors=\"3\"\n"
+                            "$pem=\"/private/etc/ssl/cert.pem\"\n"
+                            "$plugins=\"plugins/\"\n"
+                            "$scheme=\"Default\"\n"
+                            "$splash=\"true\"\n"
+                            "$table=\"true\"\n"
+                            "$text=\"data/references.txt\"\n"
+                            "$updates=\"false\"\n"
+                            "$username=\"user\"\n");
 
 int main() {
 
@@ -56,7 +55,7 @@ int main() {
   Preferences prefs(CONFIG, defaults.data());
 
   if (action == "config" && http.post.mFields.contains("save") &&
-       http.post.mFields.at("save") == "true") {
+      http.post.mFields.at("save") == "true") {
     prefs.preferences = http.post;
     prefs.Save();
   }
@@ -73,9 +72,9 @@ int main() {
     a->second(http, prefs);
   } else {
     http.uri += "?action=list";
-    std::find_if(
-        std::begin(actions), std::end(actions),
-        [](const auto &item) { return item.first == "splash"; })->second(http, prefs);
+    std::find_if(std::begin(actions), std::end(actions), [](const auto &item) {
+      return item.first == "splash";
+    })->second(http, prefs);
   }
   DisplayFooter(t0);
 

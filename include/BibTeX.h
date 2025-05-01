@@ -28,5 +28,5 @@ std::string SplitKeywords(const std::string &keywords, const std::string &self);
 
 Record Parse(std::string_view bibtex, size_t &nbytes_parsed);
 bool Export(Record &record, std::ostream &ostr, Setup &setup);
-};     // namespace BibTeX
+}; // namespace BibTeX
 #endif // end of BIBTEX_H

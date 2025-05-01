@@ -33,8 +33,8 @@ Preferences::Preferences(const std::filesystem::path &f, char *defaults)
 
     size = f_stat.st_size;
 
-    data = p = (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE,
-                            MAP_PRIVATE, fd, 0);
+    data = p =
+        (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
   }
 
   char *key, *value;

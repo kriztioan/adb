@@ -63,25 +63,25 @@ std::string Coders::LaTeXDecode(std::string str) {
                               *combined[] = {"uml", "acute", "grave", "circ",
                                              "tilde"},
                               *replace[] = {
-                                "c", "&ccedil;", "C", "&Cedil;", "o",
-                                "&oslash;", "O", "&Oslash;", "ae", "&aelig;",
-                                "AA", "&#8491;", "deg", "&deg;",
-                                "dagger", "&dagger;"};
+                                  "c",   "&ccedil;", "C",      "&Cedil;",
+                                  "o",   "&oslash;", "O",      "&Oslash;",
+                                  "ae",  "&aelig;",  "AA",     "&#8491;",
+                                  "deg", "&deg;",    "dagger", "&dagger;"};
 
-      char translated[9],
-      *offset;
+  char translated[9], *offset;
 
   int n_char;
   for (std::string::size_type idx = 0; idx < str.length(); idx++) {
     if (str[idx] == '\\') {
       if (strchr(translate, str[idx + 1])) {
-        n_char = snprintf(translated, sizeof(translated), "&#%d;", str[idx + 1]);
+        n_char =
+            snprintf(translated, sizeof(translated), "&#%d;", str[idx + 1]);
         str.replace(idx, 2, translated, n_char);
         idx += (n_char - 2);
       } else if ((offset = const_cast<char *>(strchr(combine, str[idx + 1])))) {
         if (strchr(vowels, str[idx + 2])) {
-          n_char = snprintf(translated, sizeof(translated), "&%c%s;", str[idx + 2],
-                           combined[(offset - combine)]);
+          n_char = snprintf(translated, sizeof(translated), "&%c%s;",
+                            str[idx + 2], combined[(offset - combine)]);
           str.replace(idx, 3, translated, n_char);
           idx += (n_char - 1);
         }

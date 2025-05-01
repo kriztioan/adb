@@ -18,8 +18,8 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   types["BOOK"] = "Book";
 
   std::string type(record.mFields.at("type")),
-      tag(Coders::HTML2XML(
-          Coders::LaTeXDecode(record.mFields.at(setup.prefs.mFields.at("key")))));
+      tag(Coders::HTML2XML(Coders::LaTeXDecode(
+          record.mFields.at(setup.prefs.mFields.at("key")))));
 
   // tag.erase(std::remove(tag.begin(), tag.end(), '.'), tag.end());
   // tag.erase(std::remove(tag.begin(), tag.end(), '&'), tag.end());
@@ -251,7 +251,6 @@ void MSWord::Header(std::ostream &ostr) {
 }
 
 void MSWord::Footer(std::ostream &ostr) { ostr << "</b:Sources>\n"; }
-
 
 MSWord::GUID *MSWord::GUIDCreate(MSWord::GUID *guid) {
   uuid_generate(guid->uuid);

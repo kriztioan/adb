@@ -10,10 +10,10 @@
 #ifndef CODERS_H
 #define CODERS_H
 
+#include <array>
 #include <cstdlib>
 #include <cstring>
 #include <string>
-#include <array>
 
 namespace Coders {
 char *URLDecodeInplace(char *str);

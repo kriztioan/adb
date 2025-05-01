@@ -10,7 +10,7 @@
 #include "BibTeX.h"
 
 std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
-                         const std::string &self) {
+                                 const std::string &self) {
 
   std::string html;
 

@@ -10,7 +10,7 @@
 #include "HTML.h"
 
 std::string HTML::Select(std::string_view options, const std::string &selected,
-                   const std::string &name, const std::string &onchange) {
+                         const std::string &name, const std::string &onchange) {
 
   std::string select("      <select class=\"select\" name=\"" + name +
                      "\" onchange=\"" + onchange + ";\">"),
