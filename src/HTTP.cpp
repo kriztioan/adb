@@ -220,17 +220,14 @@ std::string HTTP::Get(std::string_view url, std::vector<std::string> headers,
     total_bytes_send += bytes_send;
   }
 
-  std::string response;
-
-  char buff[block_size];
+  std::string response, buff(block_size, '\0');
 
   int bytes_recv;
-  while ((bytes_recv = recv(sockfd, buff, block_size - 1, 0))) {
+  while ((bytes_recv = recv(sockfd, buff.data(), block_size, 0))) {
     if (bytes_recv == -1) {
       return (std::string());
     }
-    buff[bytes_recv] = '\0';
-    response.append(buff);
+    response.append(buff.data(), bytes_recv);
   }
   return (response.substr(response.find("\r\n\r\n") + 4));
 }
@@ -253,9 +250,7 @@ std::string HTTP::SecureGet(std::string_view url,
                             .tv_usec = 0}; // TODO: Make user configurable
 
   std::stringstream ss;
-  std::string request, response;
-
-  char buff[block_size];
+  std::string request, response, buff(block_size, '\0');
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
@@ -338,12 +333,11 @@ std::string HTTP::SecureGet(std::string_view url,
   }
 
   int bytes_recv;
-  while ((bytes_recv = BIO_read(bio, buff, block_size - 1))) {
+  while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
     if (bytes_recv == -1) {
       goto fail;
     }
-    buff[bytes_recv] = '\0';
-    response.append(buff);
+    response.append(buff.data(), bytes_recv);
   }
 
   if (BIO_reset(bio) != 0) {
@@ -379,9 +373,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
                             .tv_usec = 0}; // TODO: Make user configurable
 
   std::stringstream ss;
-  std::string request, response;
-
-  char buff[block_size];
+  std::string request, response, buff(block_size, '\0');
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
@@ -468,12 +460,11 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
 
   int bytes_recv;
 
-  while ((bytes_recv = BIO_read(bio, buff, block_size - 1))) {
+  while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
     if (bytes_recv == -1) {
       return (std::string());
     }
-    buff[bytes_recv] = '\0';
-    response.append(buff);
+    response.append(buff.data(), bytes_recv);
   }
 
   if (BIO_reset(bio) != 0) {
