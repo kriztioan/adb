@@ -12,9 +12,11 @@
 
 #include "Record.h"
 
+#include <algorithm>
 #include <iostream>
+#include <string>
 
-#include <uuid/uuid.h>
+#include <openssl/evp.h>
 
 namespace MSWord {
 
@@ -23,24 +25,17 @@ using Setup = struct _Setup {
   Record &strings;
 };
 
+#define GUID_MS_LENGTH 37
 using GUID = struct _GUID {
-  union {
-    struct {
-      uint32_t data1;
-      uint16_t data2;
-      uint16_t data3;
-      uint8_t data4[8];
-    };
-    uuid_t uuid;
-  };
-  char ms[37];
+  uint8_t uuid[16];
+  char ms[GUID_MS_LENGTH];
 };
 
 void Header(std::ostream &ostr);
 bool Export(Record &record, std::ostream &ostr, Setup &setup);
 void Footer(std::ostream &ostr);
 
-GUID *GUIDCreate(GUID *guid);
+GUID *GUIDCreate(GUID *guid, const std::string &value);
 
 }; // namespace MSWord
 

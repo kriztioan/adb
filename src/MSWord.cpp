@@ -21,20 +21,16 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
       tag(Coders::HTML2XML(Coders::LaTeXDecode(
           record.mFields.at(setup.prefs.mFields.at("key")))));
 
-  // tag.erase(std::remove(tag.begin(), tag.end(), '.'), tag.end());
-  // tag.erase(std::remove(tag.begin(), tag.end(), '&'), tag.end());
-
-  for (size_t i = 0; i < type.length(); i++) {
-    type[i] = (char)toupper(type[i]);
-  }
+  std::transform(type.begin(), type.end(), type.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
 
   GUID guid;
-  GUIDCreate(&guid);
+  GUIDCreate(&guid, tag);
 
   ostr << "<b:Source>\n"
        << "<b:SourceType>" << types[type] << "</b:SourceType>\n"
        << "<b:Guid>{" << guid.ms << "}</b:Guid>\n"
-       << "<b:LCID>" << 0 << "</b:LCID>\n"
+       << "<b:LCID>" << 1033 << "</b:LCID>\n"
        << "<b:Tag>" << tag << "</b:Tag>\n"
        << "<b:Title>"
        << Coders::HTML2XML(Coders::LaTeXDecode(record.mFields["title"]))
@@ -252,13 +248,48 @@ void MSWord::Header(std::ostream &ostr) {
 
 void MSWord::Footer(std::ostream &ostr) { ostr << "</b:Sources>\n"; }
 
-MSWord::GUID *MSWord::GUIDCreate(MSWord::GUID *guid) {
-  uuid_generate(guid->uuid);
-  // uuid_unparse(guid->uuid, guid->str);
-  snprintf(guid->ms, 37,
-           "%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
-           guid->data1, guid->data2, guid->data3, guid->data4[0],
-           guid->data4[1], guid->data4[2], guid->data4[3], guid->data4[4],
-           guid->data4[5], guid->data4[6], guid->data4[7]);
+MSWord::GUID *MSWord::GUIDCreate(MSWord::GUID *guid, const std::string &value) {
+
+  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+
+  if (ctx == NULL) {
+
+    return nullptr;
+  }
+
+  const EVP_MD *md = EVP_md5();
+
+  EVP_DigestInit(ctx, md);
+
+  uint8_t ns[] = {0x6b, 0xa7, 0xb8, 0x11, 0x9d, 0xad, 0x11, 0xd1,
+                  0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8};
+
+  EVP_DigestUpdate(ctx, ns, sizeof(ns));
+
+  EVP_DigestUpdate(ctx, value.data(), value.length());
+
+  uint32_t md_len;
+
+  EVP_DigestFinal(ctx, guid->uuid, &md_len);
+
+  EVP_MD_CTX_free(ctx);
+
+  // version 3
+  guid->uuid[6] = (guid->uuid[6] & 0x0F) | 0x30;
+
+  // variant URL
+  guid->uuid[8] = (guid->uuid[8] & 0x3F) | 0x80;
+
+  snprintf(guid->ms, GUID_MS_LENGTH,
+           "%02X%02X%02X%02X-"
+           "%02X%02X-"
+           "%02X%02X-"
+           "%02X%02X-"
+           "%02X%02X%02X%02X%02X%02X",
+           guid->uuid[0], guid->uuid[1], guid->uuid[2], guid->uuid[3],
+           guid->uuid[4], guid->uuid[5], guid->uuid[6], guid->uuid[7],
+           guid->uuid[8], guid->uuid[9], guid->uuid[10], guid->uuid[11],
+           guid->uuid[12], guid->uuid[13], guid->uuid[14], guid->uuid[15]);
+
   return guid;
 }
