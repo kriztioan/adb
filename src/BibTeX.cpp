@@ -47,7 +47,7 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
         break;
       }
     }
-    if (nauthors == max_authors && end == std::string::npos) {
+    if (nauthors == max_authors && end != std::string::npos) {
       html += " <span class=\"etal\">et al.</span>";
     }
   }
