@@ -13,41 +13,43 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
                                  const std::string &self) {
 
   std::string html;
+  if (authors.empty()) {
+    return (html);
+  }
 
   html.reserve(128);
 
-  std::string::size_type i = 0, end;
+  std::string::size_type beg = 0, end = authors.find(" and ");
 
-  int nauthors = 0;
-
-  auto helper = [&]() {
+  auto output_html = [&]() {
     std::string author;
-    for (; i < end; i++) {
-      char c = authors[i];
+
+    for (const auto &c : authors.substr(beg, end - beg)) {
       if (c != '{' && c != '}') {
         author += c;
       }
     }
-    html += " <span title=\"Search for &apos;" + author +
-            "&apos;\"><a href=\"" + self +
-            "?action=search&amp;match=" + Coders::HTMLEncode(author) +
-            "&amp;scheme=author\">" + author + "</a></span>,";
+    html += "<span title=\"Search for &apos;" + author + "&apos;\"><a href=\"" +
+            self + "?action=search&amp;match=" + Coders::HTMLEncode(author) +
+            "&amp;scheme=author\">" + author + "</a></span>";
   };
 
-  while (((nauthors < max_authors || max_authors == -1) &&
-          (end = authors.find(" and ", i)) != std::string::npos)) {
-    ++nauthors;
-    helper();
-    i = end + 5;
-  }
-
-  end = authors.length();
-  if ((nauthors < max_authors || max_authors == -1) && end > 0) {
-    helper();
-  }
-
-  if (nauthors == max_authors && i < end) {
-    html += " <span class=\"etal\">et al.</span>";
+  int nauthors = 1;
+  output_html();
+  if (end != std::string::npos) {
+    while (nauthors < max_authors || max_authors == -1) {
+      beg = end + 5;
+      end = authors.find(" and ", beg);
+      html += ", ";
+      output_html();
+      ++nauthors;
+      if (end == std::string::npos) {
+        break;
+      }
+    }
+    if (nauthors == max_authors && end == std::string::npos) {
+      html += " <span class=\"etal\">et al.</span>";
+    }
   }
 
   return (html);
