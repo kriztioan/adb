@@ -1691,15 +1691,14 @@ void QueryADS(HTTP &http, Preferences &prefs) {
                       prefs.preferences.mFields["pem"].c_str());
 
   rapidjson::Document json;
-  if (json.Parse(bibtex.c_str()).HasParseError()) {
-    return;
-  }
-
-  if (!json.HasMember("export")) {
+  if (json.Parse(bibtex.c_str()).HasParseError() || !json.HasMember("export")) {
+    http.post.mFields["ADScode"] += " (not found)";
+    DisplayEntryForm(http, prefs);
     return;
   }
 
   size_t size = 0;
+
   http.post = BibTeX::Parse(json["export"].GetString(), size);
 
   http.post.mFields["ADScode"] = http.post.mFields["biblcode"];
@@ -2275,6 +2274,8 @@ void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
     ++record_id;
   }
+
+  d.SetNextId(record_id);
 
   d.Commit();
 

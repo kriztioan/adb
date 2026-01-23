@@ -8,7 +8,6 @@
  ***********************************************/
 
 #include "Database.h"
-#include <fstream>
 
 Database::Database(const std::filesystem::path &f) : filename(f) {
 
@@ -19,13 +18,12 @@ Database::Database(const std::filesystem::path &f) : filename(f) {
     return;
   }
 
-  struct stat f_stat;
-  if (fstat(fd, &f_stat) == -1 || (f_stat.st_mode & S_IFDIR)) {
+  if (!std::filesystem::is_regular_file(f)) {
     close(fd);
     return;
   }
 
-  size = f_stat.st_size;
+  size = std::filesystem::file_size(f);
 
   data =
       (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
@@ -34,7 +32,7 @@ Database::Database(const std::filesystem::path &f) : filename(f) {
     return;
   }
 
-  memcpy(&id, data, sizeof(long));
+  std::memcpy(&id, data, sizeof(long));
 
   vRecords.reserve(256);
 
@@ -59,19 +57,19 @@ Database::~Database() {
   }
 }
 
-bool Database::good() { return state; }
+bool Database::good() { return (state); }
 
 bool Database::Commit() {
 
   static char tmp[] = "./tmp/adb.XXXXXX";
 
   if (!mkstemp(tmp)) {
-    return false;
+    return (false);
   }
 
   std::fstream ofstr(tmp);
   if (ofstr.fail()) {
-    return false;
+    return (false);
   }
 
   ofstr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
@@ -85,7 +83,14 @@ bool Database::Commit() {
   }
   ofstr.close();
 
-  rename(tmp, filename.c_str());
+  std::string bak = filename.string() + ".bak";
+  if (rename(filename.c_str(), bak.c_str()) == -1) {
+    return (false);
+  }
+
+  if (rename(tmp, filename.c_str()) == -1) {
+    return (false);
+  }
 
   return (true);
 }
@@ -99,7 +104,7 @@ bool Database::SetRecord(Record &record, std::string_view id_str) {
     for (auto &r : vRecords) {
       if (r.mFields.at("id") == id_str) {
         r = record;
-        return true;
+        return (true);
       }
     }
   }

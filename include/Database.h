@@ -11,15 +11,13 @@
 #define DATABASE_H
 
 #include "Record.h"
+#include <algorithm>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
-
-#include <algorithm>
 
 // #include <memory_resource>
 
@@ -48,6 +46,12 @@ public:
       }
     }
     return (false);
+  }
+
+  long SetNextId(long new_id) {
+    long old_id = id;
+    id = new_id;
+    return (old_id);
   }
 
   void SortRecords(const char *key, bool reverse = false);
