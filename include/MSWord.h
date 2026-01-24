@@ -11,12 +11,11 @@
 #define MSWORD_H
 
 #include "Record.h"
+#include "Uuid.h"
 
 #include <algorithm>
 #include <iostream>
 #include <string>
-
-#include <openssl/evp.h>
 
 namespace MSWord {
 
@@ -25,17 +24,9 @@ using Setup = struct _Setup {
   Record &strings;
 };
 
-#define GUID_MS_LENGTH 37
-using GUID = struct _GUID {
-  uint8_t uuid[16];
-  char ms[GUID_MS_LENGTH];
-};
-
 void Header(std::ostream &ostr);
 bool Export(Record &record, std::ostream &ostr, Setup &setup);
 void Footer(std::ostream &ostr);
-
-GUID *GUIDCreate(GUID *guid, const std::string &value);
 
 }; // namespace MSWord
 

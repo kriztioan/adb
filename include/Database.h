@@ -30,7 +30,7 @@ public:
 
   bool Commit();
 
-  bool SetRecord(Record &record, std::string_view id_str);
+  bool SetRecord(Record &record, std::string_view id_str = "-1");
   bool RemoveRecord(std::string_view id_str);
 
   template <typename T>

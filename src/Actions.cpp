@@ -2749,7 +2749,7 @@ void Import(HTTP &http, Preferences &prefs) {
 
   auto record = BibTeX::Parse(http.file_data, size);
   while (record.mFields.size()) {
-    d.SetRecord(record, "-1");
+    d.SetRecord(record);
     record = BibTeX::Parse(http.file_data, size);
   }
 

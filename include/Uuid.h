@@ -1,0 +1,29 @@
+/**
+ *  @file   Uuid.h
+ *  @brief  Uuid Class Definition
+ *  @author KrizTioaN (christiaanboersma@hotmail.com)
+ *  @date   2026-01-24
+ *  @note   BSD-3 licensed
+ *
+ ***********************************************/
+
+#ifndef UUID_H
+#define UUID_H
+
+#include <string>
+
+#include <openssl/evp.h>
+
+#define UUID_MS_LENGTH 37
+using UUID = struct _UUID {
+  uint8_t uuid[16];
+  char ms[UUID_MS_LENGTH];
+};
+
+namespace Uuid {
+
+bool UUIDFromURL(UUID *uuid, const std::string &url);
+
+}; // namespace Uuid
+
+#endif // end of UUID_H
