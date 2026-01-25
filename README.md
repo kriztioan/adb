@@ -46,9 +46,7 @@ and start using the application.
 
 ## Notes
 
-1. The `GNU` C++ compiler is hardcoded to `g++-12` in `CMakeLists.txt`, change if needed.
-2. The `OPENSSL_ROOT_DIR` is hardcoded to `/usr/local/Cellar/openssl@3/3.0.7` in `CMakeLists.txt`, change if needed.
-3. The PEM certificate file used by `AdB` defaults to `/private/etc/ssl/cert.pem`, change if needed under `Config→DOI CrossRef→PEM`.
+1. The PEM certificate file used by `AdB` defaults to `/private/etc/ssl/cert.pem`, change if needed under `Config→DOI CrossRef→PEM`.
 
 ## BSD-3 License
 
