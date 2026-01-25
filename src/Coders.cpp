@@ -49,6 +49,7 @@ std::string Coders::URLEncode(std::string str) {
           str.replace(i, 1, buff);
           i += 2;
           len += 2;
+          break;
         }
       }
     }
