@@ -95,6 +95,12 @@ bool Database::Commit() {
   return (true);
 }
 
+std::vector<Record>::iterator Database::GetRecord(std::string_view id_str) {
+  return std::find_if(
+      vRecords.begin(), vRecords.end(),
+      [id_str](Record &record) { return record.mFields.at("id") == id_str; });
+}
+
 bool Database::SetRecord(Record &record, std::string_view id_str) {
   if (id_str == "-1") {
     record.mFields.at("id") = std::to_string(id++);
@@ -202,4 +208,22 @@ Database::DuplicateRecordsForKey(const char *key) {
   }
 
   return (vDuplicates);
+}
+
+bool Database::ReindexRecords(
+    const std::function<bool(Record &record, long id)> &process) {
+  long record_id = 0;
+  for (auto &r : vRecords) {
+    std::string id_str(std::to_string(record_id)), r_id_str(r.mFields.at("id"));
+    if (r_id_str == id_str) {
+      ++record_id;
+      continue;
+    }
+    if (!process(r, record_id++)) {
+      return (false);
+    }
+    r.mFields.at("id") = id_str;
+  }
+  id = record_id;
+  return (true);
 }

@@ -15,10 +15,10 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <vector>
-
 // #include <memory_resource>
 
 class Database {
@@ -30,6 +30,7 @@ public:
 
   bool Commit();
 
+  std::vector<Record>::iterator GetRecord(std::string_view id_str);
   bool SetRecord(Record &record, std::string_view id_str = "-1");
   bool RemoveRecord(std::string_view id_str);
 
@@ -48,27 +49,8 @@ public:
     return (false);
   }
 
-  template <typename T>
-  bool ReindexRecords(T &user_data,
-                      bool (*process)(Record &record, long id, T &user_data)) {
-    long record_id = 0;
-    for (auto &r : vRecords) {
-      std::string id_str(std::to_string(record_id)),
-          r_id_str(r.mFields.at("id"));
-      if (r_id_str == id_str) {
-        ++record_id;
-        continue;
-      }
-
-      if (!process(r, record_id++, user_data)) {
-        return (false);
-      }
-
-      r.mFields.at("id") = id_str;
-    }
-    id = record_id;
-    return (true);
-  }
+  bool
+  ReindexRecords(const std::function<bool(Record &record, long id)> &process);
 
   void SortRecords(const char *key, bool reverse = false);
   std::vector<std::string>

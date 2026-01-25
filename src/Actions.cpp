@@ -1069,12 +1069,8 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
 
   std::unordered_map<std::string, std::string> mFields;
   if (id_str != "-1") {
-    for (auto &r : d.vRecords) {
-      if (r.mFields.at("id") == id_str) {
-        mFields = r.mFields;
-        break;
-      }
-    }
+    auto record_p = d.GetRecord(id_str);
+    mFields = record_p->mFields;
   } else {
     mFields = http.post.mFields;
     query_ads = " <button id=\"adsquery\" title=\"Query\" type=\"button\" "
@@ -2213,41 +2209,6 @@ void DisplayImportForm(HTTP &http, [[maybe_unused]] Preferences &prefs) {
             << "</form>\n";
 }
 
-typedef struct {
-  std::ostream &ostr;
-  Preferences &prefs;
-} ReindexRecordContext;
-
-bool reindex_record(Record &record, long id, ReindexRecordContext &ctx) {
-  ctx.ostr << "  <tr>\n"
-           << "    <td>\n"
-           << record.mFields["id"] << "\n"
-           << "    </td>\n"
-           << "    <td>\n"
-           << id << "\n"
-           << "    </td>\n"
-           << "    <td>\n";
-
-  std::filesystem::path SourcePath(ctx.prefs.preferences.mFields["base"] +
-                                   "archive/" + record.mFields["id"] + ".pdf");
-
-  if (record.mFields["archive"] == "on" &&
-      std::filesystem::exists(SourcePath)) {
-    std::filesystem::path DestinationPath(
-        ctx.prefs.preferences.mFields["base"] + "archive/" +
-        std::to_string(id) + ".pdf");
-    std::filesystem::rename(SourcePath, DestinationPath);
-    ctx.ostr << "      yes\n";
-  } else {
-    ctx.ostr << "      no\n";
-  }
-
-  ctx.ostr << "    </td>\n"
-           << "  </tr>\n";
-
-  return true;
-}
-
 void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
   std::cout << "<table class=\"layout reindex\">\n"
@@ -2275,8 +2236,36 @@ void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
     return;
   }
 
-  ReindexRecordContext ctx = {std::cout, prefs};
-  if (!d.ReindexRecords(ctx, reindex_record)) {
+  if (!d.ReindexRecords([&prefs](Record &record, long id) {
+        std::cout << "  <tr>\n"
+                  << "    <td>\n"
+                  << record.mFields["id"] << "\n"
+                  << "    </td>\n"
+                  << "    <td>\n"
+                  << id << "\n"
+                  << "    </td>\n"
+                  << "    <td>\n";
+
+        std::filesystem::path SourcePath(prefs.preferences.mFields["base"] +
+                                         "archive/" + record.mFields["id"] +
+                                         ".pdf");
+
+        if (record.mFields["archive"] == "on" &&
+            std::filesystem::exists(SourcePath)) {
+          std::filesystem::path DestinationPath(
+              prefs.preferences.mFields["base"] + "archive/" +
+              std::to_string(id) + ".pdf");
+          std::filesystem::rename(SourcePath, DestinationPath);
+          std::cout << "      yes\n";
+        } else {
+          std::cout << "      no\n";
+        }
+
+        std::cout << "    </td>\n"
+                  << "  </tr>\n";
+
+        return true;
+      })) {
     return;
   }
 

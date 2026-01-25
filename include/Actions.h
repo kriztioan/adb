@@ -23,8 +23,8 @@
 
 #include "Strings.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <iostream>
 
@@ -74,28 +74,28 @@ void Import(HTTP &http, Preferences &prefs);
 void Export(HTTP &http, Preferences &prefs);
 
 using act = void (*)(HTTP &, Preferences &);
-static constexpr const std::array<std::pair<std::string_view, act>, 22> actions{{
-    {"authors", DisplayAuthors},
-    {"config", DisplayConfigForm},
-    {"delete", Delete},
-    {"doicrossref", DisplayDOICrossrefForm},
-    {"duplicates", DisplayDuplicatesForm},
-    {"edit", DisplayEntryForm},
-    {"exportBibTeX", Export},
-    {"exportMSWord", Export},
-    {"exportText", Export},
-    {"import", DisplayImportForm},
-    {"importBibTeX", Import},
-    {"info", DisplayInfo},
-    {"keywords", DisplayKeywords},
-    {"list", DisplayDataList},
-    {"open", DisplayEntry},
-    {"queryADS", QueryADS},
-    {"queryDOI", QueryDOI},
-    {"reindex", DisplayReindexForm},
-    {"search", DisplayDataList},
-    {"splash", DisplaySplash},
-    {"tools", DisplayToolsForm},
-    {"update", Update}}};
+static constexpr const std::array<std::pair<std::string_view, act>, 22> actions{
+    {{"authors", DisplayAuthors},
+     {"config", DisplayConfigForm},
+     {"delete", Delete},
+     {"doicrossref", DisplayDOICrossrefForm},
+     {"duplicates", DisplayDuplicatesForm},
+     {"edit", DisplayEntryForm},
+     {"exportBibTeX", Export},
+     {"exportMSWord", Export},
+     {"exportText", Export},
+     {"import", DisplayImportForm},
+     {"importBibTeX", Import},
+     {"info", DisplayInfo},
+     {"keywords", DisplayKeywords},
+     {"list", DisplayDataList},
+     {"open", DisplayEntry},
+     {"queryADS", QueryADS},
+     {"queryDOI", QueryDOI},
+     {"reindex", DisplayReindexForm},
+     {"search", DisplayDataList},
+     {"splash", DisplaySplash},
+     {"tools", DisplayToolsForm},
+     {"update", Update}}};
 
 #endif // end of ACTIONS_H
