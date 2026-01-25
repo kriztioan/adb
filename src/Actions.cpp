@@ -179,20 +179,6 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
                    it->second + "')\">URL</button>";
   }
 
-  it = record.mFields.find("archive");
-  if (it != not_found && it->second == "on") {
-    std::filesystem::path PDFPath("archive/" + id_str + ".pdf");
-    std::filesystem::path FullPath(prefs.preferences.mFields.at("base"));
-    FullPath += PDFPath;
-    if (std::filesystem::exists(FullPath)) {
-      ADSfullpaper = "  <button id=\"pdf\" title=\"PDF Archive\" "
-                     "type=\"button\" onclick=\"gotoURL('" +
-                     prefs.preferences.mFields.at("baseurl") +
-                     "script/pdf.js/web/viewer.html?file=%2F" +
-                     PDFPath.string() + "')\">Archive</button>";
-    }
-  }
-
   std::string Title;
   it = record.mFields.find("title");
   if (it != not_found && !it->second.empty()) {
@@ -250,6 +236,31 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
       } else {
         Journal = "No journal";
       }
+    }
+  }
+
+  it = record.mFields.find("archive");
+  if (it != not_found && it->second == "on") {
+    std::filesystem::path PDFPath("archive/" + id_str + ".pdf");
+    std::filesystem::path FullPath(prefs.preferences.mFields.at("base"));
+    FullPath += PDFPath;
+    if (std::filesystem::exists(FullPath)) {
+      std::string SaveName;
+      if (ADScode.length() != 0) {
+        SaveName = ADScode;
+      } else if (Title.length() != 0) {
+        SaveName = Title;
+      } else {
+        SaveName = id_str;
+      }
+
+      ADSfullpaper = "  <button id=\"pdf\" title=\"PDF Archive\" "
+                     "type=\"button\" onclick=\"gotoURL('" +
+                     prefs.preferences.mFields.at("baseurl") +
+                     "script/pdf.js/web/viewer.html?file=%2F" +
+                     PDFPath.string() +
+                     "&saveName=" + Coders::URLEncode(SaveName) +
+                     ".pdf')\">Archive</button>";
     }
   }
 
