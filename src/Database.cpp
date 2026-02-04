@@ -9,32 +9,35 @@
 
 #include "Database.h"
 
-Database::Database(const std::filesystem::path &f) : filename(f) {
+Database::Database(const std::filesystem::path &f, Pool &pool)
+    : filename(f), pool(pool) {
 
   state = false;
+
+  if (!std::filesystem::is_regular_file(f)) {
+    return;
+  }
+
+  size_t page_size = getpagesize();
+
+  size = (std::filesystem::file_size(f) + page_size - 1) & ~(page_size - 1);
 
   int fd = open(filename.c_str(), O_RDONLY | O_SHLOCK);
   if (fd == -1) {
     return;
   }
 
-  if (!std::filesystem::is_regular_file(f)) {
-    close(fd);
-    return;
-  }
-
-  size = std::filesystem::file_size(f);
-
   data =
       (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-  if (!data) {
+  if (data == MAP_FAILED) {
+    close(fd);
     return;
   }
 
   std::memcpy(&id, data, sizeof(long));
 
-  vRecords.reserve(256);
+  vRecords.reserve(1024);
 
   char *p = data + sizeof(long) + 1;
   char *q = p;
@@ -52,12 +55,11 @@ Database::Database(const std::filesystem::path &f) : filename(f) {
 }
 
 Database::~Database() {
+
   if (data) {
     munmap(data, size);
   }
 }
-
-bool Database::good() { return (state); }
 
 bool Database::Commit() {
 
@@ -103,7 +105,9 @@ std::vector<Record>::iterator Database::GetRecord(std::string_view id_str) {
 
 bool Database::SetRecord(Record &record, std::string_view id_str) {
   if (id_str == "-1") {
-    record.mFields.at("id") = std::to_string(id++);
+    pool.begin();
+    pool << id++;
+    record.mFields.at("id") = pool.sv();
     vRecords.push_back(record);
     return (true);
   } else {
@@ -118,16 +122,17 @@ bool Database::SetRecord(Record &record, std::string_view id_str) {
 }
 
 bool Database::RemoveRecord(std::string_view id_str) {
-  for (auto it = vRecords.begin(); it < vRecords.end(); it++) {
-    if (it->mFields.at("id") == id_str) {
-      vRecords.erase(it);
+  for (auto record_it = vRecords.begin(); record_it < vRecords.end();
+       record_it++) {
+    if (record_it->mFields.at("id") == id_str) {
+      vRecords.erase(record_it);
       return (true);
     }
   }
   return (false);
 }
 
-void Database::SortRecords(const char *key, bool reverse) {
+void Database::SortRecords(std::string_view key, bool reverse) {
 
   if (!reverse) {
     std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
@@ -142,36 +147,38 @@ void Database::SortRecords(const char *key, bool reverse) {
   }
 };
 
-std::vector<std::string>
-Database::UniqueValuesForKey(const char *key,
-                             std::vector<std::string> (*func)(std::string)) {
+std::vector<std::string> Database::UniqueValuesForKey(
+    std::string_view key, std::vector<std::string> (*func)(std::string_view)) {
 
-  std::vector<std::string> vValues;
-  vValues.reserve(64);
+  std::vector<std::string> v;
+  v.reserve(64);
 
-  for (auto &r : vRecords) {
-    std::vector<std::string> needles(func(r.mFields[key]));
-    for (const auto &n : needles) {
-      bool found = false;
-      for (const auto &v : vValues) {
-        if (n == v) {
-          found = true;
-          break;
+  for (auto &record : vRecords) {
+    auto field_it = record.mFields.find(key);
+    if (field_it != record.mFields.end()) {
+      std::vector<std::string> needles(func(field_it->second));
+      for (const auto &needle : needles) {
+        bool found = false;
+        for (const auto &value : v) {
+          if (needle == value) {
+            found = true;
+            break;
+          }
         }
-      }
-      if (!found) {
-        vValues.emplace_back(n);
+        if (!found) {
+          v.emplace_back(needle);
+        }
       }
     }
   }
 
-  std::sort(vValues.begin(), vValues.end());
+  std::sort(v.begin(), v.end());
 
-  return (vValues);
+  return (v);
 }
 
 std::vector<std::vector<Record>>
-Database::DuplicateRecordsForKey(const char *key) {
+Database::DuplicateRecordsForKey(std::string_view key) {
 
   SortRecords(key);
 
@@ -222,7 +229,9 @@ bool Database::ReindexRecords(
     if (!process(r, record_id++)) {
       return (false);
     }
-    r.mFields.at("id") = id_str;
+    pool.begin();
+    pool << id_str;
+    r.mFields.at("id") = pool.sv();
   }
   id = record_id;
   return (true);

@@ -9,31 +9,41 @@
 
 #include "Strings.h"
 
-Strings::Strings(const std::filesystem::path &f) : filename(f) {
+BibTeX::Strings::Strings(const std::filesystem::path &f, Pool &pool)
+    : filename(f), pool(pool) {
+  Parse(f);
+}
+
+BibTeX::Strings::Strings(Pool &pool) : pool(pool) {}
+
+int BibTeX::Strings::Parse(const std::filesystem::path &f) {
+
+  filename = f;
 
   state = false;
 
+  if (!std::filesystem::is_regular_file(f)) {
+    return (state);
+  }
+
+  size_t page_size = getpagesize();
+
+  size = (std::filesystem::file_size(f) + page_size - 1) & ~(page_size - 1);
+
   int fd = open(filename.c_str(), O_RDONLY | O_SHLOCK);
   if (fd == -1) {
-    return;
+    return (state);
   }
 
-  struct stat f_stat;
-  if (fstat(fd, &f_stat) == -1 || (f_stat.st_mode & S_IFDIR)) {
+  char *data =
+      (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+  if (data == MAP_FAILED) {
     close(fd);
-    return;
+    return (state);
   }
 
-  size = f_stat.st_size;
-
-  char *data = (char *)mmap(nullptr, f_stat.st_size, PROT_READ | PROT_WRITE,
-                            MAP_PRIVATE, fd, 0);
-
-  if (!data) {
-    return;
-  }
-
-  char *p = data, *q = p + f_stat.st_size, *c, *key;
+  char *p = data, *q = p + size, *c, *key;
   while (p < q) {
     while (isspace(*p))
       ++p;
@@ -55,36 +65,36 @@ Strings::Strings(const std::filesystem::path &f) : filename(f) {
           ;
         *p = '\0';
         c = ++p;
-        while (*p) {
+        while (*p && *p != '\"') {
           if (*p == '\\')
             p += 2;
-          if (*p++ != '\"')
-            continue;
-          break;
+          else
+            ++p;
         }
         *p = '\0';
 
-        strings.mFields.emplace(key, Coders::LaTeXDecode(c));
+        strings.mFields.emplace(key, Coders::LaTeXDecode(c, pool));
 
         while (*p != '\n' && *p)
           ++p;
       } else {
-        return;
+        return (state);
       }
     }
     ++p;
   }
-
   close(fd);
 
   state = true;
+
+  return (state);
 }
 
-Strings::~Strings() {
+BibTeX::Strings::~Strings() {
 
   if (data) {
     munmap(data, size);
   }
 }
 
-bool Strings::good() { return (state); }
+bool BibTeX::Strings::good() { return (state); }

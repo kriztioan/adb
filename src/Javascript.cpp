@@ -10,7 +10,6 @@
 #include "Javascript.h"
 
 std::string Javascript::Array(std::vector<std::string> &v) {
-
   std::string str("Array(");
   if (v.size()) {
     auto it = v.begin();

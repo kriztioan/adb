@@ -1,86 +1,90 @@
-body{
-  background: #698b69;
-  color: #9bcd9b;
-  font-family: Helvetica;
-  font-weight: bold;
-  font-size: 10pt;
-  margin: 0pt;
+body {
+    background: #698b69;
+    color: #9bcd9b;
+    font-family: Helvetica;
+    font-weight: bold;
+    font-size: 10pt;
+    margin: 0pt;
 }
 
-a{
-  color: #698b69;
-  text-decoration: none;
-  background: #9bcd9b ;
-  border-style: none; 
-}
-          
-a.title{
-  font-weight: bold;
+a {
+    color: #698b69;
+    text-decoration: none;
+    background: #9bcd9b;
+    border-style: none;
 }
 
-table{
-  width: 1000px;
-  border: 2px solid #9bcd9b;
+a.title {
+    font-weight: bold;
 }
 
-table.menu{
-  padding: 10px 3px;
+table {
+    width: 1000px;
+    border: 2px solid #9bcd9b;
 }
 
-table.layout{
-  padding: 3px;
+table.menu {
+    padding: 10px 3px;
 }
 
-.highlight{
-  background-color: yellow;
+table.layout {
+    padding: 3px;
 }
 
-input.config{
-  color: #9bcd9b;
-  background-color: #698b69;
-  border: solid 1px #9bcd9b;
-  width: 13cm;
+.highlight {
+    background-color: yellow;
 }
 
-textarea.config{
-  color: #9bcd9b;
-  background-color: #698b69;
-  border: solid 1px #9bcd9b;
-  width: 13cm;
-  min-height: 4em;
+input.config {
+    color: #9bcd9b;
+    background-color: #698b69;
+    border: solid 1px #9bcd9b;
+    width: 13cm;
 }
 
-.select{
-  color: #698b69;
-  background-color: #9bcd9b;
-  border: #698b69;
+textarea.config {
+    color: #9bcd9b;
+    background-color: #698b69;
+    border: solid 1px #9bcd9b;
+    width: 13cm;
+    min-height: 4em;
 }
 
-.search{
-  width: 6cm;
-  border: solid 1px #9bcd9b;
-  background-color: #698b69;
-  color : #9bcd9b;
+.select {
+    color: #698b69;
+    background-color: #9bcd9b;
+    border: #698b69;
 }
 
-input.file{
-  border: 1px solid #9bcd9b;
-  background-color: #698b69;
-  color : #9bcd9b;
+.search {
+    width: 6cm;
+    border: solid 1px #9bcd9b;
+    background-color: #698b69;
+    color: #9bcd9b;
 }
 
-button{
-  border: 1px solid #9bcd9b;
-  color:  #698b69;
-  background-color: #9bcd9b;
-  cursor: pointer;
+input.file {
+    border: 1px solid #9bcd9b;
+    background-color: #698b69;
+    color: #9bcd9b;
 }
 
-div.autocomplete{
-  visibility:hidden;
-  width:10cm;
-  border:solid 1px #ffa54f;
-  background: #ffa54f;
-  position:absolute;
-  overflow:hidden;
+button {
+    border: 1px solid #9bcd9b;
+    color: #698b69;
+    background-color: #9bcd9b;
+    cursor: pointer;
+}
+
+div.autocomplete {
+    visibility: hidden;
+    width: 10cm;
+    border: solid 1px #ffa54f;
+    background: #ffa54f;
+    position: absolute;
+    overflow: hidden;
+}
+
+button {
+    cursor: pointer;
 }

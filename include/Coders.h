@@ -13,14 +13,19 @@
 #include <array>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <string>
+#include <string_view>
+
+#include "Pool.h"
 
 namespace Coders {
 char *URLDecodeInplace(char *str);
 
-std::string URLEncode(std::string str);
-std::string LaTeXDecode(std::string str);
-std::string HTMLEncode(std::string str);
+std::string URLEncode(std::string_view sv);
+std::string LaTeXDecode(std::string_view str);
+std::string_view LaTeXDecode(std::string_view sv, Pool &pool);
+std::string HTMLEncode(std::string_view sv);
 std::string HTML2XML(std::string html);
 
 }; // namespace Coders

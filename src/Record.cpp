@@ -9,7 +9,7 @@
 
 #include "Record.h"
 
-Record::Record(char *d) { Parse(d); };
+Record::Record(char *data) { Parse(data); };
 
 void Record::Parse(char *data) {
 
@@ -17,46 +17,60 @@ void Record::Parse(char *data) {
     return;
   }
 
-  char *p = data, *q, *key, *value;
+  char *p = data, *q, *k, *v, *kk;
   while (*p) {
-    key = p;
+    while (*p && *p == '+') {
+      ++p;
+    }
+    if (!*p) {
+      return;
+    }
+    k = p;
     while (*p && *p != '=') {
       ++p;
     }
     if (!*p) {
-      break;
+      return;
     }
     *p = '\0';
-    value = ++p;
-    while (*p && *p != '&') {
-      ++p;
-    }
-    q = p;
+    q = p++;
     while (*--q == '+') {
       *q = '\0';
     }
+    kk = q + 1;
 
-    if (!*p) {
-      Coders::URLDecodeInplace(value);
-      auto it = mFields.find(key);
-      if (it == mFields.end()) {
-        mFields.emplace_hint(it, key, value);
-      } else {
-        it->second += ',';
-        it->second += value;
-      }
-      break;
+    while (*p && *p == '+') {
+      ++p;
     }
-    *p = '\0';
-    Coders::URLDecodeInplace(value);
-    auto it = mFields.find(key);
-    if (it == mFields.end()) {
-      mFields.emplace_hint(it, key, value);
+    v = p;
+    while (*p && *p != '&') {
+      ++p;
+    }
+    if (*p) {
+      *p = '\0';
+      q = p++;
     } else {
-      it->second += ',';
-      it->second += value;
+      q = p;
     }
-    ++p;
+    while (*--q == '+') {
+      *q = '\0';
+    }
+    if (*v) {
+      v = Coders::URLDecodeInplace(v);
+      auto field_it = mFields.find(k);
+      if (field_it == mFields.end()) {
+        mFields.emplace_hint(field_it, std::piecewise_construct,
+                             std::forward_as_tuple(k, kk - k),
+                             std::forward_as_tuple(v));
+      } else {
+        size_t len_q = field_it->second.size();
+        q = const_cast<char *>(field_it->second.data()) + len_q;
+        *q++ = ',';
+        size_t len_v = strlen(v) + 1;
+        std::memmove(q, v, len_v);
+        field_it->second =
+            std::string_view(field_it->second.data(), len_q + len_v);
+      }
+    }
   }
 }
-

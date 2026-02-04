@@ -1,99 +1,104 @@
-*{
-  font-family: Helvetica;
+* {
+    font-family: Helvetica;
 }
 
-body{
-  background: #eeeeee;
-  font-size: 10pt;
-  margin: 0;
+body {
+    background: #eeeeee;
+    font-size: 10pt;
+    margin: 0;
 }
 
-table{
-  background: url('Aqua/aqua.jpg');
-  border: 1px solid #aaaaaa;
-  width: 1000px;
+table {
+    background: url('Aqua/aqua.jpg');
+    border: 1px solid #aaaaaa;
+    width: 1000px;
 }
 
-table.menu{
-  padding: 10px 3px;
+table.menu {
+    padding: 10px 3px;
 }
 
-table.layout{
-  padding: 3px;
+table.layout {
+    padding: 3px;
 }
 
-button{
-  font-weight: bold;
-  cursor: pointer;
-  font-family: Arial;
-  line-height: 22px;
-  font-size: 10px;
-  width: 60px;
-  height: 22px;
-  background: url('Aqua/button.png');
-  border-style: none;
+button {
+    font-weight: bold;
+    cursor: pointer;
+    font-family: Arial;
+    line-height: 22px;
+    font-size: 10px;
+    width: 60px;
+    height: 22px;
+    background: url('Aqua/button.png');
+    border-style: none;
 }
 
-a{
-  text-decoration: none;
-  color: #000000;
+a {
+    text-decoration: none;
+    color: #000000;
 }
 
-a.title{
-  font-weight: bold;
+a.title {
+    font-weight: bold;
 }
 
-a.clean{
-  margin: 0;
-  font-size: 10pt;
-  float : none;
-  display: inline;
-  background: transparent;
-  border-style: none;
-  font-weight: normal;
-}
-a.clean:hover{
-  text-decoration:underline;
+a.clean {
+    margin: 0;
+    font-size: 10pt;
+    float: none;
+    display: inline;
+    background: transparent;
+    border-style: none;
+    font-weight: normal;
 }
 
-.menu{
-  border: 1px solid #aaaaaa;
-  background: url('Aqua/aqua.jpg') #ffffff repeat;
-  font-weight: normal;
+a.clean:hover {
+    text-decoration: underline;
 }
 
-.highlight{
-  background-color: yellow;
+.menu {
+    border: 1px solid #aaaaaa;
+    background: url('Aqua/aqua.jpg') #ffffff repeat;
+    font-weight: normal;
 }
 
-input.config{
-  color: #000000;
-  background-color: #ffffff;
-  border: inset 1px #000000;
-  width: 13cm;
+.highlight {
+    background-color: yellow;
 }
 
-textarea.config{
-  color: #000000;
-  background-color: #ffffff;
-  border: inset 1px #000000;
-  width: 13cm;
-  min-height: 4em;
+input.config {
+    color: #000000;
+    background-color: #ffffff;
+    border: inset 1px #000000;
+    width: 13cm;
 }
 
-select{
-  background-color: #ffffff;
+textarea.config {
+    color: #000000;
+    background-color: #ffffff;
+    border: inset 1px #000000;
+    width: 13cm;
+    min-height: 4em;
 }
 
-.search{
-  width: 6cm;
+select {
+    background-color: #ffffff;
 }
 
-div.autocomplete{
-  visibility: hidden;
-  width: 10cm;
-  border: solid 1px #000000;
-  background: #ffffff;
-  float: left;
-  position: absolute;
+.search {
+    width: 6cm;
+}
+
+div.autocomplete {
+    visibility: hidden;
+    width: 10cm;
+    border: solid 1px #000000;
+    background: #ffffff;
+    float: left;
+    position: absolute;
+}
+
+button {
+    cursor: pointer;
 }

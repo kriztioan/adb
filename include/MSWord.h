@@ -27,7 +27,6 @@ using Setup = struct _Setup {
 void Header(std::ostream &ostr);
 bool Export(Record &record, std::ostream &ostr, Setup &setup);
 void Footer(std::ostream &ostr);
-
 }; // namespace MSWord
 
 #endif // end of MSWORD_H

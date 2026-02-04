@@ -11,9 +11,12 @@
 #define BIBTEX_H
 
 #include "Coders.h"
+#include "Pool.h"
 #include "Record.h"
 #include "Strings.h"
+
 #include <string>
+#include <string_view>
 
 namespace BibTeX {
 
@@ -23,10 +26,11 @@ using Setup = struct _Setup {
 };
 
 std::string SplitAuthors(std::string_view authors, int max_authors,
-                         const std::string &self);
-std::string SplitKeywords(const std::string &keywords, const std::string &self);
+                         std::string_view self);
+std::string SplitKeywords(std::string_view keywords, std::string_view self);
 
-Record Parse(std::string_view bibtex, size_t &nbytes_parsed);
+Record Parse(std::string_view bibtex, size_t &nbytes_parsed, Pool &pool);
 bool Export(Record &record, std::ostream &ostr, Setup &setup);
 }; // namespace BibTeX
+
 #endif // end of BIBTEX_H

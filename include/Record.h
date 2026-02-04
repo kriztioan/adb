@@ -15,16 +15,24 @@
 #include <string_view>
 #include <unordered_map>
 
+using Field =
+    std::unordered_map<std::string_view, std::string_view>::const_iterator;
+
 class Record {
 
 public:
   Record() = default;
-  Record(char *d);
+  Record(char *data);
 
   void Parse(char *data);
-  std::unordered_map<std::string, std::string> mFields;
 
-private:
+  inline auto operator[](std::string_view key) const {
+    return (mFields.find(key));
+  }
+
+  auto end() const { return (mFields.end()); }
+
+  std::unordered_map<std::string_view, std::string_view> mFields;
 };
 
 #endif // end of RECORD_H

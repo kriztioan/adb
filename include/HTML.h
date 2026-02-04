@@ -13,17 +13,16 @@
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
-#include <string>
 #include <string_view>
 
 namespace HTML {
 
-std::string Select(std::string_view options, const std::string &selected,
-                   const std::string &name, const std::string &onchange);
+std::string Select(std::string_view options, std::string_view selected,
+                   std::string_view name, std::string_view onchange);
 
 std::string Highlight(std::string_view body, std::string_view match);
 
-std::string Filesize(std::string_view filename);
+std::string Filesize(std::filesystem::path &f);
 
 }; // namespace HTML
 

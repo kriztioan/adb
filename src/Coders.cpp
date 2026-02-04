@@ -12,7 +12,7 @@
 char *Coders::URLDecodeInplace(char *str) {
 
   size_t i;
-  char *p = str, *q = p, r[3], *s;
+  char *p = str, *q = p, r[3] = {0}, *s;
   while (*p) {
     if (*p == '+') {
       *q++ = ' ';
@@ -23,7 +23,6 @@ char *Coders::URLDecodeInplace(char *str) {
       while (++p && i++ < 2) {
         *s++ = *p;
       }
-      *s = '\0';
       *q++ = static_cast<char>(std::strtol(r, nullptr, 16));
     } else {
       *q++ = *p++;
@@ -34,30 +33,39 @@ char *Coders::URLDecodeInplace(char *str) {
   return str;
 }
 
-std::string Coders::URLEncode(std::string str) {
+std::string Coders::URLEncode(std::string_view sv) {
 
-  size_t len = str.length();
   static constexpr const char reserved[] = "$&+,/:;=?@{}";
+
+  size_t len = sv.length();
+
+  std::string str;
+
+  str.reserve(len);
+
   char buff[4];
+
+  size_t j;
   for (size_t i = 0; i < len; i++) {
-    if (str[i] == ' ') {
-      str[i] = '+';
+    if (sv[i] == ' ') {
+      str += '+';
     } else {
-      for (size_t j = 0; j < sizeof(reserved); j++) {
-        if (str[i] == reserved[j]) {
+      for (j = 0; j < sizeof(reserved); j++) {
+        if (sv[i] == reserved[j]) {
           snprintf(buff, 4, "%%%2X", (int)reserved[j]);
-          str.replace(i, 1, buff);
-          i += 2;
-          len += 2;
+          str += buff;
           break;
         }
+      }
+      if (j == sizeof(reserved)) {
+        str += sv[i];
       }
     }
   }
   return (str);
 }
 
-std::string Coders::LaTeXDecode(std::string str) {
+std::string Coders::LaTeXDecode(std::string_view sv) {
 
   static constexpr const char *translate = "&$%\\", *combine = "\"\'`^~",
                               *vowels = "aeiounAEIOUN",
@@ -67,76 +75,135 @@ std::string Coders::LaTeXDecode(std::string str) {
                                   "c",   "&ccedil;", "C",      "&Cedil;",
                                   "o",   "&oslash;", "O",      "&Oslash;",
                                   "ae",  "&aelig;",  "AA",     "&#8491;",
-                                  "deg", "&deg;",    "dagger", "&dagger;"};
+                                  "deg", "&deg;",    "dagger", "&dagger;",
+                                  "gt",  "&gt;",     "lt",     "&lt;"};
 
   char translated[9], *offset;
 
-  int n_char;
-  for (std::string::size_type idx = 0; idx < str.length(); idx++) {
-    if (str[idx] == '\\') {
-      if (strchr(translate, str[idx + 1])) {
-        n_char =
-            snprintf(translated, sizeof(translated), "&#%d;", str[idx + 1]);
-        str.replace(idx, 2, translated, n_char);
-        idx += (n_char - 2);
-      } else if ((offset = const_cast<char *>(strchr(combine, str[idx + 1])))) {
-        if (strchr(vowels, str[idx + 2])) {
-          n_char = snprintf(translated, sizeof(translated), "&%c%s;",
-                            str[idx + 2], combined[(offset - combine)]);
-          str.replace(idx, 3, translated, n_char);
-          idx += (n_char - 1);
+  size_t len = sv.length();
+
+  std::ostringstream ostr;
+
+  for (std::string::size_type i = 0; i < len; i++) {
+    if (sv[i] == '\\') {
+      if (strchr(translate, sv[i + 1])) {
+        snprintf(translated, sizeof(translated), "&#%d;", sv[++i]);
+        ostr << translated;
+        continue;
+      } else if ((offset = const_cast<char *>(strchr(combine, sv[i + 1])))) {
+        if (strchr(vowels, sv[i + 2])) {
+          snprintf(translated, sizeof(translated), "&%c%s;", sv[i + 2],
+                   combined[(offset - combine)]);
+          ostr << translated;
+          i += 2;
+          continue;
         }
       } else {
-        for (unsigned i = 0; i < sizeof(replace) / sizeof(char *); i += 2) {
-          size_t len1 = strlen(replace[i]);
-          if (str.substr(idx + 1, len1) == replace[i]) {
-            size_t len2 = strlen(replace[i + 1]);
-            str.replace(idx, len1 + 1, replace[i + 1], len2);
-            idx += (len2 - len1);
+        for (unsigned j = 0; j < sizeof(replace) / sizeof(char *); j += 2) {
+          size_t len1 = strlen(replace[j]);
+          if (sv.substr(i + 1, len1) == replace[j]) {
+            ostr << replace[j + 1];
+            i += len1;
             break;
           }
         }
+        continue;
       }
-    } else if (str[idx] == '$') {
-      if (str[idx + 1] == '\\') {
-        str[idx] = '&';
-        str.erase(idx + 1, 1);
-        while (str[idx++] != '$' && idx < str.length())
-          ;
-        if (idx < str.length()) {
-          str[--idx] = ';';
+    } else if (sv[i] == '$') {
+      if (sv[i + 1] == '\\') {
+        ostr << "&";
+        ++i;
+        while (sv[++i] != '$' && i < len) {
+          ostr << sv[i];
         }
+        ostr << ";";
+        continue;
       }
-    } else if (str[idx] == '{' || str[idx] == '}' || str[idx] == '\"' ||
-               str[idx] == '~') {
-      str.erase(idx--, 1);
+    } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~') {
+      continue;
     }
+    ostr << sv[i];
   }
-  return (str);
+  return (ostr.str());
 }
 
-std::string Coders::HTMLEncode(std::string str) {
+std::string_view Coders::LaTeXDecode(std::string_view sv, Pool &pool) {
 
-  for (std::string::size_type idx = 0; idx < str.length(); idx++) {
-    if (str[idx] == '\n') {
-      if (str[idx - 1] == '\r') {
-        str.erase(--idx, 1);
+  static constexpr const char
+      *translate = "&$%\\",
+      *combine = "\"\'`^~", *vowels = "aeiounAEIOUN",
+      *combined[] = {"uml", "acute", "grave", "circ", "tilde"},
+      *replace[] = {"c",   "&ccedil;", "C",      "&Cedil;",  "o",  "&oslash;",
+                    "O",   "&Oslash;", "ae",     "&aelig;",  "AA", "&#8491;",
+                    "deg", "&deg;",    "dagger", "&dagger;", "gt", "&gt;",
+                    "lt",  "&lt;"}; //"i", "&imath;"};
+
+  char *offset;
+
+  size_t len = sv.length(), replace_len;
+
+  pool.begin();
+  for (std::string::size_type i = 0; i < len; i++) {
+    if (sv[i] == '\\') {
+      if (strchr(translate, sv[i + 1])) {
+        pool << "&#" << static_cast<int>(sv[++i]) << ";";
+        continue;
+      } else if ((offset = const_cast<char *>(strchr(combine, sv[i + 1])))) {
+        if (strchr(vowels, sv[i + 2])) {
+          pool << '&' << sv[i + 2] << combined[(offset - combine)] << ';';
+          i += 2;
+          continue;
+        }
+      } else {
+        for (unsigned j = 0; j < sizeof(replace) / sizeof(char *); j += 2) {
+          replace_len = strlen(replace[j]);
+          if (sv.substr(i + 1, replace_len) == replace[j]) {
+            pool << replace[j + 1];
+            i += replace_len;
+            break;
+          }
+        }
+        continue;
       }
-      str.replace(idx, 1, "<br />\n");
-      idx = idx + 6;
-    } else if (str[idx] == ' ') {
-      if (str[idx + 1] == ' ') {
-        str.replace(idx, 1, "&nbsp;");
-        idx = idx + 5;
+    } else if (sv[i] == '$') {
+      if (sv[i + 1] == '\\') {
+        pool << "&";
+        ++i;
+        while (sv[++i] != '$' && i < len) {
+          pool << sv[i];
+        }
+        pool << ";";
+        continue;
       }
-    } else if (str[idx] == '<') {
-      str.replace(idx, 1, "&lt;");
-      idx = idx + 3;
-    } else if (str[idx] == '>') {
-      str.replace(idx, 1, "&gt;");
-      idx = idx + 3;
-    } else if (str[idx] == '\"')
-      str.replace(idx, 1, "&quot;");
+    } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~') {
+      continue;
+    }
+    pool << sv[i];
+  }
+
+  return (pool.sv());
+}
+
+std::string Coders::HTMLEncode(std::string_view sv) {
+
+  size_t len = sv.length();
+
+  std::string str;
+
+  for (size_t i = 0; i < len; i++) {
+    if (sv[i] == '\r') {
+      continue;
+    } else if (sv[i] == '\n') {
+      str += "<br />\n";
+    } else if (sv[i] == '<') {
+      str += "&lt;";
+    } else if (sv[i] == '>') {
+      str += "&gt;";
+    } else if (sv[i] == '\"') {
+      str += "&quot;";
+    } else {
+      str += sv[i];
+    }
   }
 
   return (str);

@@ -9,13 +9,14 @@
 
 #include "HTML.h"
 
-std::string HTML::Select(std::string_view options, const std::string &selected,
-                         const std::string &name, const std::string &onchange) {
+std::string HTML::Select(std::string_view options, std::string_view selected,
+                         std::string_view name, std::string_view onchange) {
 
-  std::string select("      <select class=\"select\" name=\"" + name +
-                     "\" onchange=\"" + onchange + ";\">"),
-      option;
+  std::string select("      <select class=\"select\" name=\"");
+  select = select.append(name) + "\" onchange=\"";
+  select = select.append(onchange) + ";\">";
 
+  std::string_view option;
   std::string::size_type size, start = 0, end;
 
   if ((size = options.length()) > 0) {
@@ -25,16 +26,19 @@ std::string HTML::Select(std::string_view options, const std::string &selected,
         end = options.length();
       }
       option = options.substr(start, end - start);
-      select += "\n        <option value=\"" + option + "\"";
+      select += "\n        <option value=\"";
+      select = select.append(option) + "\"";
       if (selected == option) {
         select += " selected=\"selected\"";
       }
-      select += ">" + option + "</option>";
+      select += ">";
+      select = select.append(option) + "</option>";
       start = end + 1;
     }
   } else {
-    select += "\n        <option value=\"" + selected + "\">" + selected +
-              "</option>";
+    select += "\n        <option value=\"";
+    select = select.append(selected) + "\">";
+    select = select.append(selected) + "</option>";
   }
   select += "\n      </select>";
 
@@ -75,21 +79,19 @@ std::string HTML::Highlight(std::string_view body, std::string_view match) {
   return (str);
 }
 
-std::string HTML::Filesize(std::string_view filename) {
-  if (!filename.empty()) {
-    if (!std::filesystem::exists(filename)) {
-      return (" <font color=\"#ff0000\">File not found!</font>");
+std::string HTML::Filesize(std::filesystem::path &f) {
+  if (!std::filesystem::exists(f)) {
+    return (" <font color=\"#ff0000\">File not found!</font>");
+  } else {
+    std::uintmax_t size = std::filesystem::file_size(f);
+    std::stringstream ss;
+    if (size < 1e3) {
+      ss << size;
+      return (ss.str() + " bytes");
     } else {
-      std::uintmax_t size = std::filesystem::file_size(filename);
-      std::stringstream ss;
-      if (size < 1e3) {
-        ss << size;
-        return (ss.str() + " bytes");
-      } else {
-        ss.setf(std::ios::fixed);
-        ss << std::setprecision(1) << (size / 1e3);
-        return (ss.str() + " kB");
-      }
+      ss.setf(std::ios::fixed);
+      ss << std::setprecision(1) << (size / 1e3);
+      return (ss.str() + " kB");
     }
   }
   return (std::string());

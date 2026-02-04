@@ -10,23 +10,27 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include "Pool.h"
 #include "Record.h"
+
 #include <algorithm>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <string>
+#include <string_view>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <vector>
-// #include <memory_resource>
 
 class Database {
 public:
-  Database(const std::filesystem::path &f);
+  Database() = delete;
+  Database(const std::filesystem::path &f, Pool &pool);
   ~Database();
 
-  bool good();
+  bool Good() { return (state); }
 
   bool Commit();
 
@@ -52,27 +56,21 @@ public:
   bool
   ReindexRecords(const std::function<bool(Record &record, long id)> &process);
 
-  void SortRecords(const char *key, bool reverse = false);
+  void SortRecords(std::string_view key, bool reverse = false);
   std::vector<std::string>
-  UniqueValuesForKey(const char *key,
-                     std::vector<std::string> (*func)(std::string));
-
-  std::vector<std::vector<Record>> DuplicateRecordsForKey(const char *key);
+  UniqueValuesForKey(std::string_view key,
+                     std::vector<std::string> (*func)(std::string_view));
+  std::vector<std::vector<Record>> DuplicateRecordsForKey(std::string_view key);
 
   std::vector<Record> vRecords;
 
-  // std::pmr::vector<Record> vRecords{&pool};
-
 private:
-  long id;
   std::filesystem::path filename;
+  Pool &pool;
+  off_t size;
+  long id;
   bool state;
   char *data = nullptr;
-  off_t size;
-
-  /*std::array<std::byte, 4096> stack_buffer;
-  std::pmr::monotonic_buffer_resource pool{std::data(stack_buffer),
-                                           std::size(stack_buffer)};*/
 };
 
 #endif // end of DATABASE_H

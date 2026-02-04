@@ -1,147 +1,147 @@
 body {
-  padding: 0;
+    padding: 0;
 }
 
 table.menu {
-  margin: 0 auto 0;
+    margin: 0 auto 0;
 }
 
 table.menu #browse,
 .menu #tools {
-  margin-left: 2em;
+    margin-left: 2em;
 }
 
 table.menu #col2 {
-  text-align: right;
+    text-align: right;
 }
 
 table.layout {
-  margin: 2em auto 0;
-  border-collapse: collapse;
+    margin: 2em auto 0;
+    border-collapse: collapse;
 }
 
 table.list {
-  table-layout: fixed;
+    table-layout: fixed;
 }
 
 #submenu #col1 {
-  padding: 0.5em 0;
+    padding: 0.5em 0;
 }
 
 #submenu #delete {
-  margin-left: 2em;
+    margin-left: 2em;
 }
 
 #submenu #BibTeX {
-  margin-left: 49em;
+    margin-left: 49em;
 }
 
 th {
-  text-align: left;
-  border-style: solid none;
+    text-align: left;
+    border-style: solid none;
 }
 
 td {
-  vertical-align: top;
+    vertical-align: top;
 }
 
 .layout #td {
-  padding: 0.5em 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+    padding: 0.5em 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 col#col1 {
-  width: 3%;
+    width: 3%;
 }
 
 col#col2 {
-  width: 25%;
+    width: 25%;
 }
 
 col#col3 {
-  width: 20%;
+    width: 20%;
 }
 
 col#col4 {
-  width: 8%;
+    width: 8%;
 }
 
 col#col5 {
-  width: 5%;
+    width: 5%;
 }
 
 col#col6 {
-  width: 15%;
+    width: 15%;
 }
 
 col#col7 {
-  width: 7%;
+    width: 7%;
 }
 
 col#col8 {
-  width: 7%;
+    width: 7%;
 }
 
 col#col9 {
-  width: 3%;
+    width: 3%;
 }
 
 col#col10 {
-  width: 7%;
+    width: 7%;
 }
 
 .layout th#modify {
-  text-align: right;
+    text-align: right;
 }
 
 .journal {
-  font-style: italic;
+    font-style: italic;
 }
 
 .volume {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 table.layout #results #col1 {
-  padding-top: 1em;
-  padding-left: 2em;
-  font-style: italic;
+    padding-top: 1em;
+    padding-left: 2em;
+    font-style: italic;
 }
 
 table.layout #results #col2 a {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 table.layout #results td {
-  border-bottom: solid;
+    border-bottom: solid;
 }
 
 table.footer {
-  margin: 2em auto 0;
+    margin: 2em auto 0;
 }
 
 table.footer #version {
-  width: 33%;
+    width: 33%;
 }
 
 table.footer #timer {
-  width: 34%;
-  text-align: center;
+    width: 34%;
+    text-align: center;
 }
 
 table.footer #copyright {
-  width: 33%;
-  text-align: right;
+    width: 33%;
+    text-align: right;
 }
 
 table.error {
-  margin: 2em auto 0;
+    margin: 2em auto 0;
 }
 
 table.error td {
-  padding: 2em;
+    padding: 2em;
 }
 
 table.login td,
@@ -150,77 +150,82 @@ table.import td,
 table.tools td,
 table.info td,
 table.config td,
-table.entry td,
+table.record td,
 table.export td,
 table.reindex td,
 table.duplicates td,
 table.authors td,
 table.keywords td {
-  padding: 0 0 0 1em;
+    padding: 0 0 0 1em;
 }
 
 table.keywords td {
-  width: 33.33%;
+    width: 33.33%;
 }
 
 table.authors td {
-  width: 33.33%;
+    width: 33.33%;
 }
 
 table.duplicates #submenu {
-  text-align: center;
+    text-align: center;
 }
 
 table.duplicates .divider {
-  border: solid 1px;
+    border: solid 1px;
 }
 
 table.reindex th,
 table.reindex td {
-  padding-left: 1em;
+    padding-left: 1em;
 }
 
 .etal {
-  font-style: oblique;
+    font-style: oblique;
 }
 
 table.splash #image {
-  height: 400px;
-  background-image: url("/images/splash.gif");
+    height: 400px;
+    background-image: url("/images/splash.gif");
 }
 
-table.entry p#comments {
-  width: 100%;
-  font-weight: bold;
-  font-style: italic;
+table.record p#comments {
+    width: 100%;
+    font-weight: bold;
+    font-style: italic;
 }
 
-table.entry #control {
-  text-align: right;
+table.record #control {
+    text-align: right;
 }
 
-table.entry #biblcode {
-  display: inline-block;
-  margin-bottom: 1em;
+table.record #control img {
+    vertical-align: middle;
+}
+
+table.record #biblcode {
+    display: inline-block;
+    margin-bottom: 1em;
 }
 
 table.info #col2 {
-  text-align: right;
+    text-align: right;
+    padding: 1em 2em 0 0;
 }
 
 table.info p {
-  width: 36em;
+    width: 40em;
 }
 
 table.config #submenu,
 table.login #submenu,
-table.entry #submenu,
+table.record #submenu,
 table.export #submenu,
 table.edit #submenu,
 table.import #submenu {
-  text-align: right;
+    text-align: right;
 }
 
 table.edit #submenu #delete {
-  margin-left: 0;
+    margin-left: 0;
 }

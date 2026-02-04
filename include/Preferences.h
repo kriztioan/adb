@@ -14,24 +14,30 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <filesystem>
+#include <string_view>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 class Preferences {
 public:
-  Preferences(const std::filesystem::path &f, char *defaults = nullptr);
+  Preferences(const std::filesystem::path &f, std::string_view defaults = {});
   ~Preferences();
 
   bool Save();
+
+  inline auto operator[](std::string_view key) const {
+    return (preferences[key]);
+  }
+
+  auto end() const { return (preferences.end()); }
 
   Record preferences;
 
 private:
   std::filesystem::path filename;
+  off_t size;
   bool state;
   char *data = nullptr;
-  off_t size;
 };
 
 #endif // end of PREFERENCES_H

@@ -9,8 +9,13 @@
 
 #include "Actions.h"
 
-std::string list_themes(const std::string &directory) {
+Pool pool(1L << 15); // 64K
+
+std::stringstream sout;
+
+std::string list_themes(std::filesystem::path &directory) {
   std::string files;
+  files.reserve(12);
   if (std::filesystem::is_directory(directory)) {
     for (const auto &p : std::filesystem::directory_iterator(directory)) {
       if (p.path().extension() == ".css") {
@@ -26,470 +31,547 @@ std::string list_themes(const std::string &directory) {
 
 void WriteHTMLHeader(Preferences &prefs) {
 
-  std::string_view baseurl(prefs.preferences.mFields.at("baseurl"));
+  auto prefs_end = prefs.end();
 
-  std::cout
-      << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-      << "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" "
-         "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tranitional.dtd\">\n"
-      << "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
-      << "<head>\n"
-      << "  <meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n"
-      << "  <meta name=\"apple-mobile-web-app-status-bar-style\" "
-         "content=\"black-translucent\" />\n"
-      << "  <link rel=\"apple-touch-icon\" sizes=\"60x60\" href=\"" << baseurl
-      << "images/touch-icon-60x60.png\" />\n"
-      << "  <link rel=\"apple-touch-icon\" sizes=\"76x76\" href=\"" << baseurl
-      << "images/touch-icon-76x76.png\" />\n"
-      << "  <link rel=\"apple-touch-icon\" sizes=\"120x120\" href=\"" << baseurl
-      << "images/touch-icon-120x120.png\" /> \n"
-      << "  <link rel=\"SHORTCUT ICON\" href=\"" << baseurl
-      << "/images/adb.ico\" />\n"
-      << "  <link rel=\"stylesheet\" href=\"" << baseurl
-      << "css/main.css\" type=\"text/css\" />\n"
-      << "  <link rel=\"stylesheet\" href=\"" << baseurl
-      << prefs.preferences.mFields.at("plugins")
-      << prefs.preferences.mFields.at("scheme")
-      << ".css\" type=\"text/css\" />\n"
-      << "  <title>The Article dataBase - AdB</title>\n"
-      << "  <meta http-equiv=\"Content-Type\" content=\"text/html; "
-         "charset=utf-8\" />\n"
-      << "  <meta name=\"description\" content=\"Homepage Christiaan "
-         "Boersma\" "
-         "/>\n"
-      << "  <meta name=\"keywords\" content=\"Christiaan, Boersma, AdB, "
-         "papers\" />\n"
-      << "  <meta name=\"resource-type\" content=\"document\" />\n"
-      << "  <meta name=\"robots\" content=\"noimageclick\" />\n"
-      << "<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, "
-         "must-revalidate\" />\n"
-      << "<meta http-equiv=\"Pragma\" content=\"no-cache\" />\n"
-      << "<meta http-equiv=\"Expires\" content=\"0\" />\n"
-      << "  <script type=\"text/javascript\" src=\"" << baseurl
-      << "script/interface.js\"></script>\n"
-      << "</head>\n"
-      << "<body onload=\"setfocus()\">\n";
+  std::string_view baseurl;
+  auto prefs_it = prefs["baseurl"];
+  if (prefs_it != prefs_end) {
+    baseurl = prefs_it->second;
+  }
+
+  sout << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+          "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" "
+          "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tranitional.dtd\">\n"
+          "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+          "<head>\n"
+          "  <meta name=\"mobile-web-app-capable\" content=\"yes\" />\n"
+          "  <meta name=\"apple-mobile-web-app-status-bar-style\" "
+          "content=\"black-translucent\" />\n"
+          "  <link rel=\"apple-touch-icon\" sizes=\"60x60\" href=\""
+       << baseurl
+       << "images/touch-icon-60x60.png\" />\n"
+          "  <link rel=\"apple-touch-icon\" sizes=\"76x76\" href=\""
+       << baseurl
+       << "images/touch-icon-76x76.png\" />\n"
+          "  <link rel=\"apple-touch-icon\" sizes=\"120x120\" href=\""
+       << baseurl
+       << "images/touch-icon-120x120.png\" /> \n"
+          "  <link rel=\"SHORTCUT ICON\" href=\""
+       << baseurl
+       << "/images/adb.ico\" />\n"
+          "  <link rel=\"stylesheet\" href=\""
+       << baseurl << "css/main.css\" type=\"text/css\" />\n"
+       << "  <link rel=\"stylesheet\" href=\"" << baseurl;
+  prefs_it = prefs["plugins"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  prefs_it = prefs["scheme"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << ".css\" type=\"text/css\" />\n"
+          "  <title>The Article dataBase - AdB</title>\n"
+          "  <meta http-equiv=\"Content-Type\" content=\"text/html; "
+          "charset=utf-8\" />\n"
+          "  <meta name=\"description\" content=\"Homepage Christiaan "
+          "Boersma\" "
+          "/>\n"
+          "  <meta name=\"keywords\" content=\"Christiaan, Boersma, AdB, "
+          "papers\" />\n"
+          "  <meta name=\"resource-type\" content=\"document\" />\n"
+          "  <meta name=\"robots\" content=\"noimageclick\" />\n"
+          "  <meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, "
+          "must-revalidate\" />\n"
+          "  <meta http-equiv=\"Pragma\" content=\"no-cache\" />\n"
+          "  <meta http-equiv=\"Expires\" content=\"0\" />\n"
+          "  <script type=\"text/javascript\" src=\""
+       << baseurl
+       << "script/interface.js\"></script>\n"
+          "</head>\n"
+          "<body onload=\"setfocus()\">\n";
 
   return;
 }
 
 void DisplayToolsForm(HTTP &http, [[maybe_unused]] Preferences &prefs) {
 
-  std::cout
-      << "<table class=\"layout tools\">\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      <h1>Tools</h1>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      <button id=\"duplicates\" title=\"Find duplicates\" "
-         "type=\"button\" onclick=\"document.location='"
-      << http.self
-      << "?action=duplicates'\">Duplicates</button> <button id=\"reindex\" "
-         "title=\"Reindex database\" type=\"button\" "
-         "onclick=\"document.location='"
-      << http.self
-      << "?action=reindex'\">Reindex</button> <button id=\"doi\" "
-         "title=\"CrossRef DOI's\" type=\"button\" "
-         "onclick=\"document.location='"
-      << http.self
-      << "?action=doicrossref'\">CrossRef DOI's</button> <button "
-         "id=\"keywords\" title=\"List keywords\" type=\"button\" "
-         "onclick=\"document.location='"
-      << http.self
-      << "?action=keywords'\">List Keywords</button> <button id=\"authors\" "
-         "title=\"List authors\" type=\"button\" "
-         "onclick=\"document.location='"
-      << http.self << "?action=authors'\">List Authors</button>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      &nbsp;\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "</table>\n";
+  sout << "<table class=\"layout tools\">\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <h1>Tools</h1>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <button id=\"duplicates\" title=\"Find duplicates\" "
+          "type=\"button\" onclick=\"document.location='"
+       << http.self
+       << "?action=duplicates'\">Duplicates</button> <button id=\"reindex\" "
+          "title=\"Reindex database\" type=\"button\" "
+          "onclick=\"document.location='"
+       << http.self
+       << "?action=reindex'\">Reindex</button> <button id=\"doi\" "
+          "title=\"CrossRef DOI's\" type=\"button\" "
+          "onclick=\"document.location='"
+       << http.self
+       << "?action=doicrossref'\">CrossRef DOI's</button> <button "
+          "id=\"keywords\" title=\"List keywords\" type=\"button\" "
+          "onclick=\"document.location='"
+       << http.self
+       << "?action=keywords'\">List Keywords</button> <button id=\"authors\" "
+          "title=\"List authors\" type=\"button\" "
+          "onclick=\"document.location='"
+       << http.self
+       << "?action=authors'\">List Authors</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      &nbsp;\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }
 
 void DisplayData(HTTP &http, Preferences &prefs, Record &record,
                  Record &strings) {
 
-  std::string search;
-  auto it = http.get.mFields.find("match"), not_found = http.get.mFields.end();
-  if (it != not_found) {
-    search = "&amp;match=" + it->second +
-             "&amp;scheme=" + http.get.mFields["scheme"];
-  }
+  static std::string_view baseurl, adsurl, doiurl;
 
-  std::string_view Type;
-  it = record.mFields.find("type");
-  if (it != not_found && !it->second.empty()) {
-    Type = it->second;
-  }
+  static std::filesystem::path base_path;
 
-  std::string id_str(record.mFields.at("id"));
+  static int nauthors = -1;
 
-  std::string ADScode;
-  it = record.mFields.find("ADScode");
-  if (it != not_found && !it->second.empty()) {
-    ADScode = it->second;
-  }
+  static bool initialized = false, table = false;
 
-  std::string Editors;
-  it = record.mFields.find("editor");
-  if (it != not_found && !it->second.empty()) {
-    Editors = Coders::LaTeXDecode(it->second);
-  }
+  static std::string search;
 
-  std::string Booktitle;
-  it = record.mFields.find("booktitle");
-  if (it != not_found && !it->second.empty()) {
-    Booktitle = Coders::LaTeXDecode(it->second);
-  }
+  if (!initialized) {
 
-  std::string ADSabstract;
-  it = record.mFields.find("ADSabstract");
-  if (it != not_found && it->second == "on") {
-    if (!ADScode.empty()) {
-      ADSabstract = "      <button id=\"abstract\" title=\"ADS Abstract\" "
-                    "type=\"button\" onclick=\"gotoURL('http://" +
-                    prefs.preferences.mFields["adsurl"] + "/abs/" + ADScode +
-                    "/abstract')\">Abstract</button> ";
+    auto prefs_end = prefs.end();
+
+    auto prefs_it = prefs["baseurl"];
+    if (prefs_it != prefs_end) {
+      baseurl = prefs_it->second;
     }
-  }
 
-  std::string ADSfullpaper;
-  it = record.mFields.find("ADSfullpaper");
-  if (it != not_found && it->second == "on") {
-    if (!ADScode.empty()) {
-      ADSfullpaper = "      <button id=\"pdf\" title=\"ADS PDF\" "
-                     "type=\"button\" onclick=\"gotoURL('http://" +
-                     prefs.preferences.mFields["adsurl"] + "/link_gateway/" +
-                     ADScode + "/PUB_PDF')\">Paper</button>";
+    prefs_it = prefs["adsurl"];
+    if (prefs_it != prefs_end) {
+      adsurl = prefs_it->second;
     }
+
+    prefs_it = prefs["base"];
+    if (prefs_it != prefs_end) {
+      base_path = prefs_it->second;
+    }
+
+    prefs_it = prefs["nauthors"];
+    if (prefs_it != prefs_end) {
+      std::from_chars(prefs_it->second.data(),
+                      prefs_it->second.data() + prefs_it->second.size(),
+                      nauthors);
+    }
+
+    prefs_it = prefs["table"];
+    if (prefs_it != prefs_end && prefs_it->second == "true") {
+      table = true;
+    } else {
+      prefs_it = prefs["doiurl"];
+      if (prefs_it != prefs_end) {
+        doiurl = prefs_it->second;
+      }
+    }
+
+    auto get_end = http.get.end();
+
+    auto get_it = http.get["match"];
+    if (get_it != get_end) {
+      search = "&match=";
+      search.append(get_it->second);
+      get_it = http.get["scheme"];
+      if (get_it != get_end) {
+        search += "&scheme=";
+        search.append(get_it->second);
+      }
+    }
+
+    initialized = true;
   }
 
-  std::string URL;
-  it = record.mFields.find("URL");
-  if (it != not_found && !it->second.empty()) {
-    ADSfullpaper = "  <button id=\"pdf\" title=\"URL\" type=\"button\" "
-                   "onclick=\"gotoURL('" +
-                   it->second + "')\">URL</button>";
+  auto record_end = record.end();
+
+  std::string_view id_str;
+  auto record_it = record["id"];
+  if (record_it != record_end) {
+    id_str = record_it->second;
+  } else {
+    id_str = "-1";
+  }
+
+  std::string_view ADScode;
+  record_it = record["ADScode"];
+  if (record_it != record_end) {
+    ADScode = record_it->second;
   }
 
   std::string Title;
-  it = record.mFields.find("title");
-  if (it != not_found && !it->second.empty()) {
-    Title = Coders::LaTeXDecode(it->second);
-  } else if (!Booktitle.empty()) {
-    Title = Booktitle;
+  record_it = record["title"];
+  if (record_it != record_end) {
+    Title = Coders::LaTeXDecode(record_it->second);
   } else {
-    Title = "No title";
-  }
-
-  std::string Comments;
-  it = record.mFields.find("comments");
-  if (it != not_found && !it->second.empty()) {
-    Comments = "      <span title=\"" + it->second +
-               "\"><img class=\"comments\" src=\"" +
-               prefs.preferences.mFields.at("baseurl") +
-               "images/available.gif\" alt=\"Available\" /></span>";
-  }
-
-  std::string Keywords;
-  it = record.mFields.find("keywords");
-  if (it != not_found && !it->second.empty()) {
-    Keywords =
-        BibTeX::SplitKeywords(Coders::LaTeXDecode(it->second), http.self);
+    record_it = record["booktitle"];
+    if (record_it != record_end) {
+      Title = Coders::LaTeXDecode(record_it->second);
+    } else {
+      Title = "No title";
+    }
   }
 
   std::string Authors;
-  it = record.mFields.find("author");
-  if (it != not_found && !it->second.empty()) {
-    Authors = BibTeX::SplitAuthors(
-        Coders::LaTeXDecode(it->second),
-        strtol(prefs.preferences.mFields["nauthors"].c_str(), nullptr, 10),
-        http.self);
-  } else if (!Editors.empty()) {
-    Authors = BibTeX::SplitAuthors(
-        Editors,
-        strtol(prefs.preferences.mFields["nauthors"].c_str(), nullptr, 10),
-        http.self);
+  record_it = record["author"];
+  if (record_it != record_end) {
+    Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(record_it->second),
+                                   nauthors, http.self);
+  } else {
+    record_it = record["editor"];
+    if (record_it != record_end) {
+      Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(record_it->second),
+                                     nauthors, http.self);
+    }
   }
 
   std::string Journal;
-  if (Type == "PHDTHESIS") {
+  record_it = record["type"];
+  if (record_it != record_end && record_it->second == "PHDTHESIS") {
     Journal = "PhD Thesis";
   } else {
-    it = record.mFields.find("journal");
-    if (it != not_found && !it->second.empty()) {
-      Journal = Coders::LaTeXDecode(it->second);
-      auto iter = strings.mFields.find(Journal);
-      if (iter != strings.mFields.end()) {
-        Journal = iter->second;
+    record_it = record["journal"];
+    if (record_it != record_end) {
+      Journal = Coders::LaTeXDecode(record_it->second);
+      auto strings_it = strings.mFields.find(Journal);
+      if (strings_it != strings.end()) {
+        Journal = strings_it->second;
       }
     } else {
-      if (!Booktitle.empty()) {
-        Journal = Booktitle;
+      record_it = record["booktitle"];
+      if (record_it != record_end) {
+        Journal = Coders::LaTeXDecode(record_it->second);
       } else {
-        Journal = "No journal";
+        record_it = record["publisher"];
+        if (record_it != record_end) {
+          Journal = Coders::LaTeXDecode(record_it->second);
+        } else {
+          Journal = "No journal";
+        }
       }
     }
   }
 
-  it = record.mFields.find("archive");
-  if (it != not_found && it->second == "on") {
-    std::filesystem::path PDFPath("archive/" + id_str + ".pdf");
-    std::filesystem::path FullPath(prefs.preferences.mFields.at("base"));
-    FullPath += PDFPath;
-    if (std::filesystem::exists(FullPath)) {
-      std::string SaveName;
-      if (ADScode.length() != 0) {
-        SaveName = ADScode;
-      } else if (Title.length() != 0) {
-        SaveName = Title;
-      } else {
-        SaveName = id_str;
-      }
-
-      ADSfullpaper = "  <button id=\"pdf\" title=\"PDF Archive\" "
-                     "type=\"button\" onclick=\"gotoURL('" +
-                     prefs.preferences.mFields.at("baseurl") +
-                     "script/pdf.js/web/viewer.html?file=%2F" +
-                     PDFPath.string() +
-                     "&saveName=" + Coders::URLEncode(SaveName) +
-                     ".pdf')\">Archive</button>";
+  if (table) {
+    sout << "  <tr>\n"
+            "    <td >\n"
+            "      <input class=\"select\" type=\"checkbox\" "
+            "name=\"select\" value=\""
+         << id_str
+         << "\" />\n"
+            "    </td>\n"
+            "    <td>\n"
+            "      <span class=\"title\" title=\"Display record &apos;"
+         << Title << "&apos;\"><a href=\"" << http.self
+         << "?action=open&id=" << id_str << search << "\">" << Title
+         << "</a></span>\n"
+            "    </td>\n"
+            "    <td>\n"
+            "      <span class=\"authors\">"
+         << Authors
+         << "</span>\n"
+            "    </td>\n"
+            "    <td>\n"
+            "      <span class=\"journal\">"
+         << Journal
+         << "</span>\n"
+            "    </td>\n"
+            "    <td>\n"
+            "      <span class=\"year\">";
+    record_it = record["year"];
+    if (record_it != record_end) {
+      sout << Coders::LaTeXDecode(record_it->second);
     }
-  }
-
-  if (prefs.preferences.mFields.contains("table") &&
-      prefs.preferences.mFields.at("table") == "true") {
-    std::cout << "  <tr>\n"
-              << "    <td >\n"
-              << "      <input class=\"select\" type=\"checkbox\" "
-                 "name=\"select\" value=\""
-              << id_str << "\" />\n"
-              << "    </td>\n"
-              << "    <td>\n"
-              << "      <span class=\"title\" title=\"Display entry &apos;"
-              << Title << "&apos;\"><a href=\"" << http.self
-              << "?action=open&amp;id=" << id_str << search << "\">" << Title
-              << "</a></span>\n"
-              << "    </td>\n"
-              << "    <td>\n"
-              << "      <span class=\"authors\">" << Authors << "</span>\n"
-              << "    </td>\n"
-              << "    <td>\n"
-              << "      <span class=\"journal\">" << Journal << "</span>\n"
-              << "    </td>\n"
-              << "    <td>\n"
-              << "      <span class=\"year\">"
-              << Coders::LaTeXDecode(record.mFields["year"]) << "</span>\n"
-              << "    </td>\n";
+    sout << "</span>\n"
+         << "    </td>\n";
   } else {
-
-    std::string Volume;
-    it = record.mFields.find("volume");
-    if (it != not_found && !it->second.empty()) {
-      Volume = Coders::LaTeXDecode(it->second);
-      Volume = ", <span class=\"volume\">" + Volume + "</span>";
+    sout << "  <tr>\n"
+            "    <td>\n"
+            "      <input class=\"select\" type=\"checkbox\" "
+            "name=\"select\" value=\""
+         << id_str
+         << "\" />\n"
+            "    </td>\n"
+            "    <td colspan=\"4\">\n"
+            "      <span class=\"authors\">"
+         << Authors
+         << "</span>, <span class=\"title\" title=\"Display record &apos;"
+         << Title << "&apos;\"><a href=\"" << http.self
+         << "?action=open&id=" << id_str << search << "\">'" << Title
+         << "'</a></span>, <span class=\"year\">";
+    record_it = record["year"];
+    if (record_it != record_end) {
+      sout << Coders::LaTeXDecode(record_it->second);
     }
-
-    std::string Pages;
-    it = record.mFields.find("pages");
-    if (it != not_found && !it->second.empty()) {
-      Pages = Coders::LaTeXDecode(it->second);
-      Pages = ", <span class=\"pages\">" + Pages + "</span>";
+    sout << "</span>, <span class=\"journal\">" << Journal << "</span>";
+    record_it = record["volume"];
+    if (record_it != record_end) {
+      sout << ", <span class=\"volume\">"
+           << Coders::LaTeXDecode(record_it->second) << "</span>";
     }
-
-    std::string DOI;
-    it = record.mFields.find("doi");
-    if (it != not_found && !it->second.empty()) {
-      DOI = Coders::LaTeXDecode(it->second);
-      DOI = " <a href=\"http://" + prefs.preferences.mFields["doiurl"] + "/" +
-            DOI + "\">doi:" + DOI + "</a>";
+    record_it = record["pages"];
+    if (record_it != record_end) {
+      sout << ", <span class=\"pages\">"
+           << Coders::LaTeXDecode(record_it->second) << "</span>";
     }
-
-    std::cout << "  <tr>\n"
-              << "    <td>\n"
-              << "      <input class=\"select\" type=\"checkbox\" "
-                 "name=\"select\" value=\""
-              << id_str << "\" />\n"
-              << "    </td>\n"
-              << "    <td colspan=\"4\">\n"
-              << "      <span class=\"authors\">" << Authors
-              << "</span>, <span class=\"title\" title=\"Display entry &apos;"
-              << Title << "&apos;\"><a href=\"" << http.self
-              << "?action=open&amp;id=" << id_str << search << "\">&quot;"
-              << Title << "&quot;</a></span>, <span class=\"year\">"
-              << Coders::LaTeXDecode(record.mFields["year"])
-              << "</span>, <span class=\"journal\">" << Journal << "</span>"
-              << Volume << Pages << DOI << "\n"
-              << "    </td>\n";
+    record_it = record["doi"];
+    if (record_it != record_end) {
+      std::string doi = Coders::LaTeXDecode(record_it->second);
+      sout << " <a href=\"http://" << doiurl << "/" << doi << "\">" << doi
+           << "</a>";
+    }
+    sout << "\n";
+    sout << "    </td>\n";
   }
 
-  std::cout << "    <td>\n"
-            << Keywords << "\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << ADSabstract << "\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << ADSfullpaper << "\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << Comments << "\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << "      <button class=\"modify\" title=\"Modify\" "
-               "type=\"button\" onclick=\"gotoURL('"
-            << http.self << "?action=edit&amp;id=" << id_str << search
-            << "')\">Modify</button>\n"
-            << "    </td>\n"
-            << "  </tr>\n";
+  sout << "    <td>\n";
+  record_it = record["keywords"];
+  if (record_it != record_end) {
+    sout << "      "
+         << BibTeX::SplitKeywords(Coders::LaTeXDecode(record_it->second),
+                                  http.self);
+  }
+  sout << "\n    </td>\n"
+          "    <td>\n";
+  record_it = record["ADSabstract"];
+  if (record_it != record_end && record_it->second == "on" &&
+      !ADScode.empty()) {
+    sout << "      <button id=\"abstract\" title=\"ADS Abstract\" "
+            "type=\"button\" onclick=\"gotoURL('http://"
+         << adsurl << "/abs/" << ADScode << "/abstract')\">Abstract</button> ";
+  }
+  sout << "\n"
+          "    </td>\n"
+          "    <td>\n";
+
+  record_it = record["archive"];
+  if (record_it != record_end && record_it->second == "on") {
+    std::filesystem::path PDFPath("archive");
+    PDFPath /= id_str;
+    PDFPath.replace_extension("pdf");
+    if (std::filesystem::exists(base_path / PDFPath)) {
+
+      sout << "      <button id=\"pdf\" title=\"PDF Archive\" "
+              "type=\"button\" onclick=\"gotoURL('"
+           << baseurl << "script/pdf.js/web/viewer.html?file=%2F"
+           << PDFPath.string() << "&saveName=";
+
+      if (!ADScode.empty()) {
+        sout << Coders::URLEncode(ADScode);
+      } else if (!Title.empty()) {
+        sout << Coders::URLEncode(Title);
+      } else {
+        sout << id_str;
+      }
+      sout << ".pdf')\">Archive</button>";
+    }
+  } else if (!ADScode.empty()) {
+    record_it = record["ADSfullpaper"];
+    if (record_it != record_end && record_it->second == "on") {
+      sout << "      <button id=\"pdf\" title=\"ADS PDF\" "
+              "type=\"button\" onclick=\"gotoURL('http://"
+           << adsurl << "/link_gateway/" << ADScode
+           << "/PUB_PDF')\">Paper</button>";
+    } else {
+      record_it = record["URL"];
+      if (record_it != record_end) {
+        sout << "  <button id=\"pdf\" title=\"URL\" type=\"button\" "
+                "onclick=\"gotoURL('"
+             << record_it->second << "')\">URL</button>";
+      }
+    }
+  }
+  sout << "    </td>\n"
+          "    <td>\n";
+  record_it = record["comments"];
+  if (record_it != record_end) {
+    sout << "      <span title=\"" << record_it->second
+         << "\"><img class=\"comments\" src=\"" << baseurl
+         << "images/available.gif\" alt=\"Available\" /></span>";
+  }
+  sout << "\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <button class=\"modify\" title=\"Modify\" "
+          "type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=edit&id=" << id_str << search
+       << "')\">Modify</button>\n"
+          "    </td>\n"
+          "  </tr>\n";
 }
 
 void DisplayDataList(HTTP &http, Preferences &prefs) {
 
-  auto it = http.get.mFields.find("reverse"),
-       not_found = http.get.mFields.end();
+  auto prefs_end = prefs.end();
 
-  bool reverse =
-      (it != not_found) && (http.get.mFields.at("reverse") == "true");
-
-  std::string::size_type p = http.uri.find("&sortby=");
-  if (p != std::string::npos) {
-    http.uri = http.uri.substr(0, p);
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
   }
 
-  std::string srt = reverse ? "" : "&amp;reverse=true";
-  std::cout << "<form name=\"entry\" action=\"" << http.self
-            << "?action=delete&amp;id=-1\" method=\"post\">\n"
-            << "<table class=\"layout list\">\n"
-            << "  <colgroup>\n"
-            << "    <col id=\"col1\" />\n"
-            << "    <col id=\"col2\" />\n"
-            << "    <col id=\"col3\" />\n"
-            << "    <col id=\"col4\" />\n"
-            << "    <col id=\"col5\" />\n"
-            << "    <col id=\"col6\" />\n"
-            << "    <col id=\"col7\" />\n"
-            << "    <col id=\"col8\" />\n"
-            << "    <col id=\"col9\" />\n"
-            << "    <col id=\"col10\" />\n"
-            << "  </colgroup>\n"
-            << "  <tr id=\"submenu\">\n"
-            << "    <td id=\"col1\" colspan=\"10\">\n"
-            << "      <button id=\"delete\" title=\"Delete selected entries\" "
-               "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
-               "delete the selected "
-               "entries?'))document.entry.submit();\">Delete</button> <button "
-               "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
-            << "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
-               "type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportBibTeX&amp;id=-1';document.entry.submit();\">"
-               "Export as BibTeX</button> <button id=\"MSWord\" title=\"Export "
-               "as MSWord\" type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportMSWord&amp;id=-1';document.entry.submit();\">"
-               "Export as MSWord</button> <button id=\"text\" title=\"Export "
-               "as Text\" type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportText&amp;id=-1';document.entry.submit();\">"
-               "Export as Text</button>\n"
-            << "    </td>" << "\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th id=\"select\">\n"
-            << "      <span title=\"Toggle, hot-key Alt + T, Ctrl + T "
-               "(Apple)\"><input id=\"toggle\" type=\"checkbox\" "
-               "onclick=\"javascript:Toggle();\" accesskey=\"t\" /></span>\n"
-            << "    </th>\n"
-            << "    <th id=\"title\">\n"
-            << "      <span title=\"Sort by Title/Book\"><a href=\"" << http.uri
-            << "&amp;sortby=title" << srt << "\">Title/Booktitle</a></span>\n"
-            << "    </th>\n"
-            << "    <th id=\"authors\">\n"
-            << "      <span title=\"Sort by Authors\"><a href=\"" << http.uri
-            << "&amp;sortby=author" << srt << "\">Author(s)</a></span>\n"
-            << "    </th>\n"
-            << "    <th id=\"journal\">\n"
-            << "      <span title=\"Sort by Journal\" ><a href=\"" << http.uri
-            << "&amp;sortby=journal" << srt << "\">Journal</a></span>\n"
-            << "    </th>\n"
-            << "    <th id=\"year\">\n"
-            << "      <span title=\"Sort by Year\"><a href=\"" << http.uri
-            << "&amp;sortby=year" << srt << "\">Year</a></span>\n"
-            << "    </th>\n"
-            << "    <th id=\"keywords\">\n"
-            << "      Keywords\n"
-            << "    </th>\n"
-            << "    <th id=\"asbstract\">\n"
-            << "      Abstract\n"
-            << "    </th>\n"
-            << "    <th id=\"pdf\">\n"
-            << "     PDF\n"
-            << "    </th>\n"
-            << "    <th id=\"comments\">\n"
-            << "      C\n"
-            << "    </th>\n"
-            << "    <th id=\"modify\">\n"
-            << "      &nbsp;\n"
-            << "    </th>\n"
-            << "  </tr>\n";
-
-  std::string base(prefs.preferences.mFields.at("base"));
-  Database d(base + prefs.preferences.mFields.at("data"));
-
-  it = http.get.mFields.find("sortby");
-  if (it != not_found) {
-    d.SortRecords(it->second.c_str(), reverse);
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
   }
 
-  Strings s(base + prefs.preferences.mFields.at("abbreviation"));
+  Database d(base_path / prefs_it->second, pool);
 
-  size_t entries = 0;
+  auto get_end = http.get.end();
 
-  std::string scheme;
-  it = http.get.mFields.find("scheme");
-  if (it != not_found) {
-    scheme = it->second;
+  auto get_it = http.get["sortby"];
+  std::string_view srt;
+  if (get_it != get_end) {
+    std::string_view sortby = get_it->second;
+    bool reverse = false;
+    get_it = http.get["reverse"];
+    if (get_it != get_end && get_it->second == "true") {
+      reverse = true;
+    } else {
+      srt = "&reverse=true";
+    }
+    d.SortRecords(sortby, reverse);
+    std::string::size_type p = http.uri.find("&sortby=");
+    if (p != std::string::npos) {
+      http.uri = http.uri.substr(0, p);
+    }
   }
 
-  std::string search;
-  it = http.get.mFields.find("match");
-  if (it != not_found) {
-    search = it->second;
+  BibTeX::Strings strings(pool);
+  prefs_it = prefs["abbreviation"];
+  if (prefs_it != prefs_end) {
+    strings.Parse(base_path / prefs_it->second);
   }
 
-  std::string ADS;
-  if (!scheme.empty()) {
+  sout << "<form name=\"record\" action=\"" << http.self
+       << "?action=delete&id=-1\" method=\"post\">\n"
+          "<table class=\"layout list\">\n"
+          "  <colgroup>\n"
+          "    <col id=\"col1\" />\n"
+          "    <col id=\"col2\" />\n"
+          "    <col id=\"col3\" />\n"
+          "    <col id=\"col4\" />\n"
+          "    <col id=\"col5\" />\n"
+          "    <col id=\"col6\" />\n"
+          "    <col id=\"col7\" />\n"
+          "    <col id=\"col8\" />\n"
+          "    <col id=\"col9\" />\n"
+          "    <col id=\"col10\" />\n"
+          "  </colgroup>\n"
+          "  <tr id=\"submenu\">\n"
+          "    <td id=\"col1\" colspan=\"10\">\n"
+          "      <button id=\"delete\" title=\"Delete selected records\" "
+          "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
+          "delete the selected "
+          "records?'))document.record.submit();\">Delete</button> <button "
+          "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
+          "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
+          "type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportBibTeX&id=-1';document.record.submit();\">"
+          "Export as BibTeX</button> <button id=\"MSWord\" title=\"Export "
+          "as MSWord\" type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportMSWord&id=-1';document.record.submit();\">"
+          "Export as MSWord</button> <button id=\"text\" title=\"Export "
+          "as Text\" type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportText&id=-1';document.record.submit();\">"
+          "Export as Text</button>\n"
+          "    </td>"
+       << "\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th id=\"select\">\n"
+          "      <span title=\"Toggle, hot-key Alt + T, Ctrl + T "
+          "(Apple)\"><input id=\"toggle\" type=\"checkbox\" "
+          "onclick=\"javascript:Toggle();\" accesskey=\"t\" /></span>\n"
+          "    </th>\n"
+          "    <th id=\"title\">\n"
+       << "      <span title=\"Sort by Title/Book\"><a href=\"" << http.uri
+       << "&sortby=title" << srt
+       << "\">Title/Booktitle</a></span>\n"
+          "    </th>\n"
+          "    <th id=\"authors\">\n"
+          "      <span title=\"Sort by Authors\"><a href=\""
+       << http.uri << "&sortby=author" << srt
+       << "\">Author(s)</a></span>\n"
+          "    </th>\n"
+          "    <th id=\"journal\">\n"
+          "      <span title=\"Sort by Journal\" ><a href=\""
+       << http.uri << "&sortby=journal" << srt
+       << "\">Journal</a></span>\n"
+          "    </th>\n"
+          "    <th id=\"year\">\n"
+          "      <span title=\"Sort by Year\"><a href=\""
+       << http.uri << "&sortby=year" << srt
+       << "\">Year</a></span>\n"
+          "    </th>\n"
+          "    <th id=\"keywords\">\n"
+          "      Keywords\n"
+          "    </th>\n"
+          "    <th id=\"asbstract\">\n"
+          "      Abstract\n"
+          "    </th>\n"
+          "    <th id=\"pdf\">\n"
+          "     PDF\n"
+          "    </th>\n"
+          "    <th id=\"comments\">\n"
+          "      C\n"
+          "    </th>\n"
+          "    <th id=\"modify\">\n"
+          "      &nbsp;\n"
+          "    </th>\n"
+          "  </tr>\n";
 
-    ADS = "      <span title=\"Search for " + search +
-          " on ADS\"><a id=\"ads\" target=\"_blank\" href=\"https://" +
-          prefs.preferences.mFields["adsurl"] + "/search/q=" + search +
-          "\">Search for " + search + "&apos; on ADS</a></span><br />";
+  size_t n_records = 0;
 
+  std::string_view scheme;
+  get_it = http.get["scheme"];
+  if (get_it != get_end) {
+    scheme = get_it->second;
+  }
+
+  std::string_view search;
+  get_it = http.get["match"];
+  if (get_it != get_end) {
+    search = get_it->second;
+  }
+
+  if (!search.empty() && !scheme.empty()) {
     if (scheme == "any") {
-      for (auto &r : d.vRecords) {
-        for (const auto &field : r.mFields) {
+      for (auto &record : d.vRecords) {
+        for (const auto &field : record.mFields) {
           std::string v(Coders::LaTeXDecode(field.second));
           if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                           [](const char &c1, const char &c2) {
                             return (toupper(c1) == toupper(c2));
                           }) != v.end()) {
-            DisplayData(http, prefs, r, s.strings);
-            ++entries;
+            DisplayData(http, prefs, record, strings.strings);
+            ++n_records;
             break;
           }
         }
       }
     } else if (scheme == "author" && search[0] == '^') {
       search = search.substr(1);
-      auto helper = [](std::string_view authors) {
+      auto helper = [](std::string_view authors) -> std::string_view {
         std::string::size_type p = authors.find(" and ");
         if (p != std::string::npos) {
           return (authors.substr(0, p));
@@ -497,109 +579,134 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
           return (authors);
         }
       };
-      for (auto &r : d.vRecords) {
-        it = r.mFields.find("author");
-        if (it == not_found) {
+      for (auto &record : d.vRecords) {
+        auto record_end = record.end();
+
+        auto record_it = record["author"];
+        if (record_it == record_end) {
           continue;
         }
-        std::string_view v(helper(Coders::LaTeXDecode(it->second)));
+        std::string v(helper(Coders::LaTeXDecode(record_it->second)));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
                           return (toupper(c1) == toupper(c2));
                         }) != v.end()) {
-          DisplayData(http, prefs, r, s.strings);
-          ++entries;
+          DisplayData(http, prefs, record, strings.strings);
+          ++n_records;
         }
       }
     } else {
-      for (auto &r : d.vRecords) {
-        it = r.mFields.find(scheme);
-        if (it == not_found) {
+      for (auto &record : d.vRecords) {
+        auto record_end = record.end();
+
+        auto record_it = record[scheme];
+        if (record_it == record_end) {
           continue;
         }
-        std::string v(Coders::LaTeXDecode(it->second));
+        std::string v(Coders::LaTeXDecode(record_it->second));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
                           return (toupper(c1) == toupper(c2));
                         }) != v.end()) {
-          DisplayData(http, prefs, r, s.strings);
-          ++entries;
+          DisplayData(http, prefs, record, strings.strings);
+          ++n_records;
         }
       }
     }
   } else {
-    for (auto &r : d.vRecords) {
-      DisplayData(http, prefs, r, s.strings);
-      ++entries;
+    for (auto &record : d.vRecords) {
+      DisplayData(http, prefs, record, strings.strings);
+      ++n_records;
     }
   }
 
-  std::cout << "  <tr id=\"results\">\n"
-            << "    <td id=\"col1\" colspan=\"5\">\n"
-            << entries << " entr" << (entries == 1 ? "y" : "ies") << " found\n"
-            << "    </td>\n"
-            << "    <td id=\"col2\" colspan=\"5\">\n"
-            << ADS << "\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr id=\"submenu\">\n"
-            << "    <td id=\"col1\" colspan=\"10\">\n"
-            << "      <button id=\"delete\" title=\"Delete selected entries\" "
-               "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
-               "delete the selected "
-               "entries?'))document.entry.submit();\">Delete</button> <button "
-               "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
-            << "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
-               "type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportBibTeX&amp;id=-1';document.entry.submit();\">"
-               "Export as BibTeX</button> <button id=\"MSWord\" title=\"Export "
-               "as MSWord\" type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportMSWord&amp;id=-1';document.entry.submit();\">"
-               "Export as MSWord</button> <button id=\"text\" title=\"Export "
-               "as Text\" type=\"button\" onclick=\"document.entry.action='"
-            << http.self
-            << "?action=exportText&amp;id=-1';document.entry.submit();\">"
-               "Export as Text</button>\n"
-            << "    </td>" << "\n"
-            << "  </tr>\n"
-            << "</table>\n"
-            << "</form>\n"
-            << "<script type=\"text/javascript\">\n"
-            << "  var CheckValue = false;\n"
-            << "  var FormName   = 'entry';\n"
-            << "  var FieldName  = 'select';\n"
-            << "\n"
-            << "  function Toggle(){ \n"
-            << "    CheckValue = !CheckValue;\n"
-            << "    if(!document.forms[FormName])\n"
-            << "      return;\n"
-            << "    var objCheckBoxes = "
-               "document.forms[FormName].elements[FieldName];\n"
-            << "    if(!objCheckBoxes)\n"
-            << "      return;\n"
-            << "    var countCheckBoxes = objCheckBoxes.length;\n"
-            << "    if(!countCheckBoxes)\n"
-            << "     objCheckBoxes.checked = CheckValue;\n"
-            << "    else\n"
-            << "      for(var i = 0; i < countCheckBoxes; i++)\n"
-            << "        objCheckBoxes[i].checked = CheckValue;\n"
-            << "   }\n"
-            << "</script>\n";
+  sout << "  <tr id=\"results\">\n"
+          "    <td id=\"col1\" colspan=\"5\">\n"
+       << "      " << n_records << " record";
+  if (n_records > 1) {
+    sout << "s";
+  }
+  sout << " found\n"
+          "    </td>\n"
+          "    <td id=\"col2\" colspan=\"5\">\n";
+  if (!search.empty()) {
+    sout << "      <p>\n"
+            "        <span title=\"Search for "
+         << search << " on ADS\"><a id=\"ads\" href=\"https://";
+    prefs_it = prefs["adsurl"];
+    if (prefs_it != prefs_end) {
+      sout << prefs_it->second;
+    }
+    sout << "/search/q=" << search << "\">Search for' " << search
+         << "' on ADS</a></span>\n"
+            "      </p>\n";
+  }
+  sout << "    </td>\n"
+          "  </tr>\n"
+          "  <tr id=\"submenu\">\n"
+          "    <td id=\"col1\" colspan=\"10\">\n"
+          "      <button id=\"delete\" title=\"Delete selected records\" "
+          "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
+          "delete the selected "
+          "records?'))document.record.submit();\">Delete</button> <button "
+          "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
+          "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
+          "type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportBibTeX&id=-1';document.record.submit();\">"
+          "Export as BibTeX</button> <button id=\"MSWord\" title=\"Export "
+          "as MSWord\" type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportMSWord&id=-1';document.record.submit();\">"
+          "Export as MSWord</button> <button id=\"text\" title=\"Export "
+          "as Text\" type=\"button\" onclick=\"document.record.action='"
+       << http.self
+       << "?action=exportText&id=-1';document.record.submit();\">"
+          "Export as Text</button>\n"
+          "    </td>"
+       << "\n"
+          "  </tr>\n"
+          "</table>\n"
+          "</form>\n"
+          "<script type=\"text/javascript\">\n"
+          "  var CheckValue = false;\n"
+          "  var FormName   = 'record';\n"
+          "  var FieldName  = 'select';\n"
+          "\n"
+          "  function Toggle(){ \n"
+          "    CheckValue = !CheckValue;\n"
+          "    if(!document.forms[FormName])\n"
+          "      return;\n"
+          "    var objCheckBoxes = "
+          "document.forms[FormName].elements[FieldName];\n"
+          "    if(!objCheckBoxes)\n"
+          "      return;\n"
+          "    var countCheckBoxes = objCheckBoxes.length;\n"
+          "    if(!countCheckBoxes)\n"
+          "     objCheckBoxes.checked = CheckValue;\n"
+          "    else\n"
+          "      for(var i = 0; i < countCheckBoxes; i++)\n"
+          "        objCheckBoxes[i].checked = CheckValue;\n"
+          "   }\n"
+          "</script>\n";
 }
 
 void WriteHTMLFooter() {
-  std::cout << "</body>\n"
-            << "</html>\n";
+  sout << "</body>\n"
+          "</html>";
 }
+
+void WriteOutput() { std::cout << sout.rdbuf(); }
 
 void DisplayMenu(HTTP &http, Preferences &prefs) {
 
   const std::string_view options("any&author&keywords&comments&title");
 
-  std::string newVersion;
-  if (prefs.preferences.mFields["updates"] == "true") {
+  auto prefs_end = prefs.end();
+
+  std::string newVersion, scheme;
+  auto prefs_it = prefs["updates"];
+  if (prefs_it != prefs_end && prefs_it->second == "true") {
     std::string latest = HTTP::Get(UPDATE_URL);
     if (latest != CURR_VERSION) {
       newVersion = " <button title=\"Update AdB to " + latest +
@@ -608,50 +715,61 @@ void DisplayMenu(HTTP &http, Preferences &prefs) {
     }
   }
 
-  std::cout
-      << "<form name=\"search\" action=\"" << http.self
-      << "?action=search\" method=\"get\">\n"
-      << "<table class=\"menu\">\n"
-      << "  <tr>\n"
-      << "    <td id=\"col1\">\n"
-      << "     <button id=\"new\" title=\"New\" type=\"button\" "
-         "onclick=\"gotoURL('"
-      << http.self
-      << "?action=edit&amp;id=-1')\">New</button> <button id=\"browse\" "
-         "title=\"Browse "
-         "all entries\" type=\"button\" onclick=\"gotoURL('"
-      << http.self
-      << "?action=list')\">Browse</button> <button id=\"import\" "
-         "title=\"Import\" type=\"button\" onclick=\"gotoURL('"
-      << http.self
-      << "?action=import')\">Import</button> <button id=\"tools\" "
-         "title=\"Tools\" type=\"button\" onclick=\"gotoURL('"
-      << http.self
-      << "?action=tools')\">Tools</button> <button id=\"config\" "
-         "title=\"Config\" type=\"button\" onclick=\"gotoURL('"
-      << http.self
-      << "?action=config')\">Config</button> <button id=\"info\" "
-         "title=\"Info\" type=\"button\" onclick=\"gotoURL('"
-      << http.self << "?action=info')\">Info</button>" /* <button id= \"logout\"
-                   " "title=\"Logout\" type=\"button\" onclick=\"gotoURL('"
-                   << http.self << "?action=logout')\">Logout</button>" <<
-                   newVersion << "\n" */
-      << "    </td>\n"
-      << "    <td id=\"col2\">\n"
-      << "      <input type=\"hidden\" name=\"action\" value=\"search\"/>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" "
-         "class=\"search\" type=\"text\" name=\"match\" "
-         "value=\""
-      << Coders::HTMLEncode(http.get.mFields["match"])
-      << "\" accesskey=\"s\"/> as \n"
-      << HTML::Select(options, http.get.mFields["scheme"], "scheme", "") << "\n"
-      << "<button id=\"search\" title=\"Search, hot-key Alt + S, Ctrl + S "
-         "(Apple)\" type=\"submit\">Search</button>\n"
-      << "   </td>\n"
-      << "  </tr>\n"
-      << "</table>\n"
-      << "</form>\n";
+  auto get_end = http.get.end();
+
+  auto get_it = http.get["scheme"];
+  if (get_it != get_end) {
+    scheme = get_it->second;
+  }
+
+  sout << "<form name=\"search\" action=\"" << http.self
+       << "?action=search\" method=\"get\">\n"
+          "<table class=\"menu\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\">\n"
+          "     <button id=\"new\" title=\"New\" type=\"button\" "
+          "onclick=\"gotoURL('"
+       << http.self
+       << "?action=edit&id=-1')\">New</button> <button id=\"browse\" "
+          "title=\"Browse "
+          "all records\" type=\"button\" onclick=\"gotoURL('"
+       << http.self
+       << "?action=list')\">Browse</button> <button id=\"import\" "
+          "title=\"Import\" type=\"button\" onclick=\"gotoURL('"
+       << http.self
+       << "?action=import')\">Import</button> <button id=\"tools\" "
+          "title=\"Tools\" type=\"button\" onclick=\"gotoURL('"
+       << http.self
+       << "?action=tools')\">Tools</button> <button id=\"config\" "
+          "title=\"Config\" type=\"button\" onclick=\"gotoURL('"
+       << http.self
+       << "?action=config')\">Config</button> <button id=\"info\" "
+          "title=\"Info\" type=\"button\" onclick=\"gotoURL('"
+       << http.self
+       << "?action=info')\">Info</button>" /* <button id= \"logout\"
+       " "title=\"Logout\" type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=logout')\">Logout</button>" <<
+       newVersion << "\n" */
+          "    </td>\n"
+          "    <td id=\"col2\">\n"
+          "      <input type=\"hidden\" name=\"action\" value=\"search\"/>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" "
+          "class=\"search\" type=\"text\" name=\"match\" "
+          "value=\"";
+  get_it = http.get["match"];
+  if (get_it != get_end) {
+    sout << Coders::HTMLEncode(get_it->second);
+  }
+  sout << "\" accesskey=\"s\"/> as \n"
+       << HTML::Select(options, scheme, "scheme", "") << "\n"
+       << "      <button id=\"search\" title=\"Search, hot-key Alt + S, Ctrl + "
+          "S "
+          "(Apple)\" type=\"submit\">Search</button>\n"
+          "   </td>\n"
+          "  </tr>\n"
+          "</table>\n"
+          "</form>\n";
 }
 
 void DisplayFooter(const std::chrono::steady_clock::time_point &t0) {
@@ -669,134 +787,143 @@ void DisplayFooter(const std::chrono::steady_clock::time_point &t0) {
 
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-  std::cout.setf(std::ios::fixed);
-  std::cout.precision(1);
+  float memory_usage =
+      static_cast<float>(pool.size()) / static_cast<float>(pool.capacity());
 
-  std::cout << "<table class=\"footer\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"version\">\n"
-            << "      " << CURR_VERSION << "\n"
-            << "    </td>\n"
-            << "    <td id=\"timer\">\n"
-            << "      page built in "
-            << std::chrono::duration<float, std::milli>{t1 - t0}.count()
-            << " ms\n"
-            << "    </td>\n"
-            << "    <td id=\"copyright\">\n"
-            << "&#169; Christiaan Boersma 2004/" << year << "\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n"
-            << "\n";
+  sout.setf(std::ios::fixed);
+  sout.precision(1);
+
+  sout << "<table class=\"footer\">\n"
+          "  <tr>\n"
+          "    <td id=\"version\">\n"
+          "      " CURR_VERSION "\n"
+          "    </td>\n"
+          "    <td id=\"timer\">\n"
+          "      page built in "
+       << std::chrono::duration<float, std::milli>{t1 - t0}.count() << " ms";
+  if (memory_usage > 0.0f) {
+    sout << " / " << 100.0f * memory_usage << "% pool use";
+  }
+  sout << "\n    </td>\n"
+          "    <td id=\"copyright\">\n"
+          "      &#169; Christiaan Boersma 2004/"
+       << year
+       << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }
 
-void DisplayEntry(HTTP &http, Preferences &prefs) {
+void DisplayRecord(HTTP &http, Preferences &prefs) {
 
-  std::string search;
-  auto it = http.get.mFields.find("match");
+  std::filesystem::path base_path;
 
-  if (it != http.get.mFields.end()) {
-    search = "&amp;match=" + it->second +
-             "&amp;scheme=" + http.get.mFields["scheme"];
+  auto prefs_end = prefs.end();
+
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
   }
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
-  if (!d.good()) {
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  std::string id_str(http.get.mFields.at("id")), id, prev_id, next_id;
-  auto record = d.vRecords.begin();
-  for (; record < d.vRecords.end(); record++) {
-    if ((id = record->mFields.at("id")) == id_str) {
-      auto r = record + 1;
-      if (r != d.vRecords.end()) {
-        next_id = r->mFields.at("id");
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
+    return;
+  }
+
+  std::string_view baseurl;
+  prefs_it = prefs["baseurl"];
+  if (prefs_it != prefs_end) {
+    baseurl = prefs_it->second;
+  }
+
+  std::string_view adsurl;
+  prefs_it = prefs["adsurl"];
+  if (prefs_it != prefs_end) {
+    adsurl = prefs_it->second;
+  }
+
+  int nauthors = -1;
+  prefs_it = prefs["nauthors"];
+  if (prefs_it != prefs_end) {
+    std::from_chars(prefs_it->second.data(),
+                    prefs_it->second.data() + prefs_it->second.size(),
+                    nauthors);
+  }
+
+  auto get_end = http.get.end();
+
+  std::string search;
+  auto get_it = http.get["match"];
+  if (get_it != get_end) {
+    search = "&match=";
+    search.append(get_it->second);
+    get_it = http.get["scheme"];
+    if (get_it != get_end) {
+      search += "&scheme=";
+      search.append(get_it->second);
+    }
+  }
+
+  std::string_view id_str;
+  get_it = http.get["id"];
+  if (get_it != get_end) {
+    id_str = get_it->second;
+  } else {
+    id_str = "-1";
+  }
+
+  std::string id, prev_id, next_id;
+
+  auto records_end = d.vRecords.end();
+
+  auto record_it = d.vRecords.begin();
+
+  Field field_end;
+
+  for (; record_it < records_end; record_it++) {
+    field_end = record_it->end();
+
+    auto field_it = (*record_it)["id"];
+    if (field_it != field_end) {
+      if ((id = field_it->second) == id_str) {
+        auto next_record_it = record_it + 1;
+        if (next_record_it != records_end) {
+          field_it = (*next_record_it)["id"];
+          if (field_it != field_end) {
+            next_id = field_it->second;
+          }
+        }
+        break;
       }
-      break;
     }
     prev_id = id;
   }
 
-  if (record == d.vRecords.end()) {
+  if (record_it == records_end) {
     return;
   }
 
-  auto not_found = record->mFields.end();
-
-  std::string_view Type;
-  it = record->mFields.find("type");
-  if (it != not_found && !it->second.empty()) {
-    Type = it->second;
-  }
-
   std::string ADScode;
-  it = record->mFields.find("ADScode");
-  if (it != not_found && !it->second.empty()) {
-    ADScode = it->second;
-  }
-
-  std::string Editors;
-  it = record->mFields.find("editor");
-  if (it != not_found && !it->second.empty()) {
-    Editors = Coders::LaTeXDecode(it->second);
+  auto field_it = (*record_it)["ADScode"];
+  if (field_it != field_end) {
+    ADScode = field_it->second;
   }
 
   std::string Booktitle;
-  it = record->mFields.find("booktitle");
-  if (it != not_found && !it->second.empty()) {
-    Booktitle = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string ADSabstract;
-  it = record->mFields.find("ADSabstract");
-  if (it != not_found && it->second == "on") {
-    if (!ADScode.empty()) {
-      ADSabstract = "      <button id=\"abstract\" title=\"ADS Abstract\" "
-                    "type=\"button\" onclick=\"gotoURL('http://" +
-                    prefs.preferences.mFields["adsurl"] + "/abs/" + ADScode +
-                    "/abstract')\">Abstract</button> ";
-    }
-  }
-
-  std::string ADSfullpaper;
-  it = record->mFields.find("ADSfullpaper");
-  if (it != not_found && it->second == "on") {
-    if (!ADScode.empty()) {
-      ADSfullpaper = "      <button id=\"pdf\" title=\"ADS PDF\" "
-                     "type=\"button\" onclick=\"gotoURL('http://" +
-                     prefs.preferences.mFields["adsurl"] + "/link_gateway/" +
-                     ADScode + "/PUB_PDF')\">Paper</button>";
-    }
-  }
-
-  std::string URL;
-  it = record->mFields.find("URL");
-  if (it != not_found && !it->second.empty()) {
-    ADSfullpaper = "  <button id=\"pdf\" title=\"URL\" type=\"button\" "
-                   "onclick=\"gotoURL('" +
-                   it->second + "')\">URL</button>";
-  }
-
-  it = record->mFields.find("archive");
-  if (it != not_found && it->second == "on") {
-    std::filesystem::path PDFPath("archive/" + id_str + ".pdf");
-    std::filesystem::path FullPath(prefs.preferences.mFields.at("base"));
-    FullPath += PDFPath;
-    if (std::filesystem::exists(FullPath)) {
-      ADSfullpaper = "  <button id=\"pdf\" title=\"PDF Archive\" "
-                     "type=\"button\" onclick=\"gotoURL('" +
-                     prefs.preferences.mFields.at("baseurl") +
-                     "script/pdf.js/web/viewer.html?file=%2F" +
-                     PDFPath.string() + "')\">Archive</button>";
-    }
+  field_it = (*record_it)["booktitle"];
+  if (field_it != field_end) {
+    Booktitle = Coders::LaTeXDecode(field_it->second);
   }
 
   std::string Title;
-  it = record->mFields.find("title");
-  if (it != not_found && !it->second.empty()) {
-    Title = Coders::LaTeXDecode(it->second);
+  field_it = (*record_it)["title"];
+  if (field_it != field_end) {
+    Title = Coders::LaTeXDecode(field_it->second);
   } else if (!Booktitle.empty()) {
     Title = Booktitle;
   } else {
@@ -804,47 +931,52 @@ void DisplayEntry(HTTP &http, Preferences &prefs) {
   }
 
   std::string Comments;
-  it = record->mFields.find("comments");
-  if (it != not_found && !it->second.empty()) {
-    Comments = "      <span title=\"" + it->second +
-               "\"><img class=\"comments\" src=\"" +
-               prefs.preferences.mFields.at("baseurl") +
-               "images/available.gif\" alt=\"Available\" /></span>";
+  field_it = (*record_it)["comments"];
+  if (field_it != field_end) {
+    std::string comments = Coders::LaTeXDecode(field_it->second);
+    Comments =
+        "      <span title=\"" + comments + "\"><img class=\"comments\" src=\"";
+    Comments = Comments.append(baseurl) +
+               "images/available.gif\" alt=\"Available\" /> </span> " +
+               comments;
   }
 
   std::string Keywords;
-  it = record->mFields.find("keywords");
-  if (it != not_found && !it->second.empty()) {
+  field_it = (*record_it)["keywords"];
+  if (field_it != field_end) {
     Keywords =
-        BibTeX::SplitKeywords(Coders::LaTeXDecode(it->second), http.self);
+        BibTeX::SplitKeywords(Coders::LaTeXDecode(field_it->second), http.self);
   }
 
   std::string Authors;
-  it = record->mFields.find("author");
-  if (it != not_found && !it->second.empty()) {
-    Authors = BibTeX::SplitAuthors(
-        Coders::LaTeXDecode(it->second),
-        strtol(prefs.preferences.mFields["nauthors"].c_str(), nullptr, 10),
-        http.self);
-  } else if (!Editors.empty()) {
-    Authors = BibTeX::SplitAuthors(
-        Editors,
-        strtol(prefs.preferences.mFields["nauthors"].c_str(), nullptr, 10),
-        http.self);
+  field_it = (*record_it)["author"];
+  if (field_it != field_end) {
+    Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(field_it->second),
+                                   nauthors, http.self);
+  } else {
+    field_it = (*record_it)["editor"];
+    if (field_it != field_end) {
+      Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(field_it->second),
+                                     nauthors, http.self);
+    }
   }
 
   std::string Journal;
-  if (Type == "PHDTHESIS") {
+
+  field_it = (*record_it)["type"];
+  if (field_it != field_end && field_it->second == "PHDTHESIS") {
     Journal = "PhD Thesis";
   } else {
-    it = record->mFields.find("journal");
-    if (it != not_found && !it->second.empty()) {
-      Journal = Coders::LaTeXDecode(it->second);
-      Strings s(prefs.preferences.mFields["base"] +
-                prefs.preferences.mFields["abbreviation"]);
-      auto iter = s.strings.mFields.find(Journal);
-      if (iter != s.strings.mFields.end()) {
-        Journal = iter->second;
+    field_it = (*record_it)["journal"];
+    if (field_it != field_end) {
+      Journal = Coders::LaTeXDecode(field_it->second);
+      prefs_it = prefs["abbreviation"];
+      if (prefs_it != prefs_end) {
+        BibTeX::Strings strings(base_path / prefs_it->second, pool);
+        auto strings_it = strings.strings[Journal];
+        if (strings_it != strings.strings.end()) {
+          Journal = strings_it->second;
+        }
       }
     } else {
       if (!Booktitle.empty()) {
@@ -855,59 +987,6 @@ void DisplayEntry(HTTP &http, Preferences &prefs) {
     }
   }
 
-  std::string Hardcopy;
-  it = record->mFields.find("dossier");
-  if (it != not_found && !it->second.empty()) {
-    Hardcopy = " <b> Dossier #</b> " + Coders::LaTeXDecode(it->second);
-  }
-
-  std::string Year;
-  it = record->mFields.find("year");
-  if (it != not_found && !it->second.empty()) {
-    Year = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string Month;
-  it = record->mFields.find("month");
-  if (it != not_found && !it->second.empty()) {
-    Month = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string Publisher;
-  it = record->mFields.find("publisher");
-  if (it != not_found && !it->second.empty()) {
-    Publisher = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string Biblcode;
-  it = record->mFields.find("biblcode");
-  if (it != not_found && !it->second.empty()) {
-    if (!ADScode.empty() && ADScode != Biblcode) {
-      ADScode = "       <b>ADS Code</b>: " + ADScode + " ";
-    }
-    Biblcode = "       <b>Bibl. Code</b>: " + it->second + " ";
-  }
-
-  std::string Vol;
-  it = record->mFields.find("volume");
-  if (it != not_found && !it->second.empty()) {
-    Vol = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string Pages;
-  it = record->mFields.find("pages");
-  if (it != not_found && !it->second.empty()) {
-    Pages = Coders::LaTeXDecode(it->second);
-  }
-
-  std::string DOI;
-  it = record->mFields.find("doi");
-  if (it != not_found && !it->second.empty()) {
-    DOI = Coders::LaTeXDecode(it->second);
-    DOI = " <a href=\"http://" + prefs.preferences.mFields["doiurl"] + "/" +
-          DOI + "\">doi:" + DOI + "</a>";
-  }
-
   if (!search.empty()) {
     Keywords = HTML::Highlight(Keywords, search);
     Authors = HTML::Highlight(Authors, search);
@@ -916,111 +995,200 @@ void DisplayEntry(HTTP &http, Preferences &prefs) {
     Booktitle = HTML::Highlight(Booktitle, search);
   }
 
+  sout << "<table class=\"layout record\">\n"
+          "  <tr>\n"
+          "    <td id=\"control\">\n";
   if (!prev_id.empty()) {
-    prev_id =
-        "       <span title=\"Previous\"><a href=\"" + http.self +
-        "?action=open&amp;id=" + prev_id +
-        "\" onmouseover=\"window.status='Previous';return true\" "
-        "onmouseout=\"window.status=' '\"><img src=\"" +
-        prefs.preferences.mFields["baseurl"] +
-        "images/previous.gif\" alt=\"Previous\" border=\"0\" /></a></span>";
+    sout << "       <span title=\"Previous\"><a href=\"" << http.self
+         << "?action=open&id=" << prev_id
+         << "\" onmouseover=\"window.status='Previous';return true\" "
+            "onmouseout=\"window.status=' '\"><img src=\""
+         << baseurl
+         << "images/previous.gif\" alt=\"Previous\" "
+            "/></a></span>";
   } else {
-    prev_id = "       <img src=\"" + prefs.preferences.mFields["baseurl"] +
-              "images/previous_disabled.gif\" alt=\"disabled\" />";
+    sout << "       <img src=\"" << baseurl
+         << "images/previous_disabled.gif\" alt=\"disabled\" />";
   }
-
   if (!next_id.empty()) {
-    next_id = "       <span title=\"Next\"><a href=\"" + http.self +
-              "?action=open&amp;id=" + next_id +
-              "\" onmouseover=\"window.status='Next';return true\" "
-              "onmouseout=\"window.status=' '\"><img src=\"" +
-              prefs.preferences.mFields["baseurl"] +
-              "images/next.gif\" alt=\"Next\" border=\"0\" /></a></span>";
+    sout << " <span title=\"Next\"><a href=\"" << http.self
+         << "?action=open&id=" << next_id
+         << "\" onmouseover=\"window.status='Next';return true\" "
+            "onmouseout=\"window.status=' '\"><img src=\""
+         << baseurl << "images/next.gif\" alt=\"Next\" /></a></span>";
   } else {
-    next_id = "       <img src=\"" + prefs.preferences.mFields["baseurl"] +
-              "images/next_disabled.gif\" alt=\"disabled\" />";
+    sout << "       <img src=\"" << baseurl
+         << "images/next_disabled.gif\" alt=\"disabled\" />";
   }
-
-  std::cout << "<table class=\"layout entry\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"control\">\n"
-            << prev_id << next_id << " " << id_str << "\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      <span id=\"journal\">" << Journal
-            << "</span> <span id=\"volume\">" << Vol
-            << "</span> <span id=\"month\">" << Month
-            << "</span> <span id=\"year\">" << Year
-            << "</span> <span id=\"pages\">" << Pages
-            << "</span> <span id=\"publisher\">" << Publisher
-            << "</span> <span id=\"doi\">" << DOI << "</span>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      <h1>" << (Booktitle.empty() ? "&nbsp;" : Booktitle)
-            << "</h1>\n"
-            << "      <h2>" << (Title.empty() ? "&nbsp;" : Title) << "</h2>\n"
-            << "      <span id=\"authors\">" << Authors << "</span>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      <span id=\"keywords\">" << Keywords
-            << "</span> <span id=\"Biblcode\">" << Biblcode
-            << "</span> <span id=\"ADSCode\">" << ADScode
-            << "</span> <span id=\"hardcopy\">" << Hardcopy << "</span>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "       <span id=\"adsabstract\">" << ADSabstract
-            << "</span> <span id=\"pdf\">" << ADSfullpaper
-            << "</span> <span id=\"url\">" << URL << "</span>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      <p id=\"comments\">\n"
-            << "        " << Comments << "\n"
-            << "      </p>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td id=\"submenu\">\n"
-            << "      <button id=\"bibtex\" title=\"Export BibTeX\" "
-               "type=\"button\" onclick=\"gotoURL('"
-            << http.self << "?action=exportBibTeX&amp;id=" << id_str << search
-            << "')\">Export as BibTeX</button> <button id=\"msword\" "
-               "title=\"Export MSWord\" type=\"button\" onclick=\"gotoURL('"
-            << http.self << "?action=exportMSWord&amp;id=" << id_str << search
-            << "')\">Export as MSWord</button> <button id=\"text\" "
-               "title=\"Export Text\" type=\"button\" onclick=\"gotoURL('"
-            << http.self << "?action=exportText&amp;id=" << id_str << search
-            << "')\">Export as Text</button> &mdash; <button id=\"modify\" "
-               "title=\"Modify\" type=\"button\" onclick=\"gotoURL('"
-            << http.self << "?action=edit&amp;id=" << id_str << search
-            << "')\">Modify</button> <button id=\"delete\" title=\"Delete this "
-               "entry\" type=\"button\" onclick=\"if(confirm('Are you sure you "
-               "want to delete this entry?'))document.location='"
-            << http.self << "?action=delete&amp;id=" << id_str << search
-            << "';\">Delete</button>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n";
+  sout << " " << id_str << "&nbsp;\n"
+       << "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <span id=\"journal\">"
+       << Journal << "</span> <span id=\"volume\">";
+  field_it = (*record_it)["volume"];
+  if (field_it != field_end) {
+    sout << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span> <span id=\"month\">";
+  field_it = (*record_it)["month"];
+  if (field_it != field_end) {
+    sout << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span> <span id=\"year\">";
+  field_it = (*record_it)["year"];
+  if (field_it != field_end) {
+    sout << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span> <span id=\"pages\">";
+  field_it = (*record_it)["pages"];
+  if (field_it != field_end) {
+    sout << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span> <span id=\"publisher\">";
+  field_it = (*record_it)["publisher"];
+  if (field_it != field_end) {
+    sout << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span> <span id=\"doi\">";
+  field_it = (*record_it)["doi"];
+  if (field_it != field_end) {
+    sout << "<a href=\"http://";
+    std::string doi = Coders::LaTeXDecode(field_it->second);
+    prefs_it = prefs["doiurl"];
+    if (prefs_it != prefs_end) {
+      sout << prefs_it->second;
+    }
+    sout << "/" << doi << "\">" << doi << "</a>";
+  }
+  sout << "</span>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <h1>"
+       << (Booktitle.empty() ? "&nbsp;" : Booktitle)
+       << "</h1>\n"
+          "      <h2>"
+       << (Title.empty() ? "&nbsp;" : Title)
+       << "</h2>\n"
+          "      <span id=\"authors\">"
+       << Authors
+       << "</span>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <span id=\"keywords\">"
+       << Keywords << "      </span> <span ";
+  field_it = (*record_it)["biblcode"];
+  if (field_it != field_end) {
+    sout << "id=\"Biblcode\"><b>Bibl. Code</b>: " << field_it->second;
+    if (!ADScode.empty() && ADScode != field_it->second) {
+      sout << "</span> <span id=\"ADSCode\"><b>ADS Code</b>: " << ADScode;
+    }
+  } else if (!ADScode.empty()) {
+    sout << "id=\"ADSCode\"><b>ADS Code</b>: " << ADScode;
+  }
+  sout << "</span> <span id=\"hardcopy\">";
+  field_it = (*record_it)["dossier"];
+  if (field_it != field_end) {
+    sout << " <b>Dossier #</b> " << Coders::LaTeXDecode(field_it->second);
+  }
+  sout << "</span>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       <span id=\"adsabstract\">";
+  if (!ADScode.empty()) {
+    field_it = (*record_it)["ADSabstract"];
+    if (field_it != field_end && field_it->second == "on") {
+      sout << "<button id=\"abstract\" title=\"ADS Abstract\" "
+              "type=\"button\" onclick=\"gotoURL('http://"
+           << adsurl << "/abs/" << ADScode
+           << "/abstract')\">Abstract</button> ";
+    }
+  }
+  sout << "</span> <span id=\"pdf\">";
+  field_it = (*record_it)["archive"];
+  if (field_it != field_end && field_it->second == "on") {
+    std::filesystem::path PDFPath("archive/");
+    PDFPath /= id_str;
+    PDFPath.replace_extension("pdf");
+    std::filesystem::path FullPath(base_path);
+    FullPath /= PDFPath;
+    if (std::filesystem::exists(FullPath)) {
+      sout << "  <button id=\"pdf\" title=\"PDF Archive\" "
+              "type=\"button\" onclick=\"gotoURL('"
+           << baseurl << "script/pdf.js/web/viewer.html?file=%2F"
+           << PDFPath.string() << "')\">Archive</button>";
+    }
+  } else if (!ADScode.empty()) {
+    field_it = (*record_it)["ADSfullpaper"];
+    if (field_it != field_end && field_it->second == "on") {
+      sout << "  <button id=\"pdf\" title=\"ADS PDF\" "
+              "type=\"button\" onclick=\"gotoURL('http://"
+           << adsurl << "/link_gateway/" << ADScode
+           << "/PUB_PDF')\">Paper</button>";
+    }
+  }
+  sout << "</span> <span id=\"url\">";
+  field_it = (*record_it)["URL"];
+  if (field_it != field_end) {
+    sout << "  <button id=\"pdf\" title=\"URL\" type=\"button\" "
+         << "onclick=\"gotoURL('" << field_it->second << "')\">URL</button>";
+  }
+  sout << "</span>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      <p id=\"comments\">\n"
+          "        "
+       << Comments
+       << "\n"
+          "      </p>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td id=\"submenu\">\n"
+          "      <button id=\"bibtex\" title=\"Export BibTeX\" "
+          "type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=exportBibTeX&id=" << id_str << search
+       << "')\">Export as BibTeX</button> <button id=\"msword\" "
+          "title=\"Export MSWord\" type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=exportMSWord&id=" << id_str << search
+       << "')\">Export as MSWord</button> <button id=\"text\" "
+          "title=\"Export Text\" type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=exportText&id=" << id_str << search
+       << "')\">Export as Text</button> &mdash; <button id=\"modify\" "
+          "title=\"Modify\" type=\"button\" onclick=\"gotoURL('"
+       << http.self << "?action=edit&id=" << id_str << search
+       << "')\">Modify</button> <button id=\"delete\" title=\"Delete this "
+          "record\" type=\"button\" onclick=\"if(confirm('Are you sure you "
+          "want to delete this record?'))document.location='"
+       << http.self << "?action=delete&id=" << id_str << search
+       << "';\">Delete</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }
 
-std::vector<std::string> split_on_comma(std::string str) {
+std::vector<std::string> split_on_comma(std::string_view sv) {
 
   std::vector<std::string> v;
 
+  if (sv.empty()) {
+    return (v);
+  }
+
   size_t b = 0, e = 0;
-  const char *p = str.c_str(), *q = p;
+  const char *p = sv.data(), *q = p;
   while (*p) {
     if (*p == ',') {
-      v.emplace_back(Coders::LaTeXDecode(std::string(q + b, e - b)));
+      v.emplace_back(Coders::LaTeXDecode(std::string_view(q + b, e - b)));
       b = e = 0;
       q = ++p;
       continue;
@@ -1035,510 +1203,683 @@ std::vector<std::string> split_on_comma(std::string str) {
     ++p;
   }
   if (e > b) {
-    v.emplace_back(Coders::LaTeXDecode(std::string(q + b, e - b)));
+    v.emplace_back(Coders::LaTeXDecode(std::string_view(q + b, e - b)));
   }
 
   return (v);
-};
+}
 
-std::vector<std::string> split_on_and(std::string str) {
+std::vector<std::string> split_on_and(std::string_view sv) {
 
-  std::vector<std::string> vStr;
+  std::vector<std::string> v;
 
-  const char *b = str.c_str(), *e;
+  const char *b = sv.data(), *e;
 
   int len, e_len, b_len = strlen(b);
   while ((e = strstr(b, " and "))) {
     e_len = strlen(e);
     len = b_len - e_len;
-    vStr.emplace_back(Coders::LaTeXDecode(std::string(b, len)));
+    v.emplace_back(Coders::LaTeXDecode(std::string_view(b, len)));
     b = e + 5;
     b_len -= (len + 5);
   }
   b_len = strlen(b);
   if (b_len) {
-    vStr.emplace_back(Coders::LaTeXDecode(std::string(b, b_len)));
+    v.emplace_back(Coders::LaTeXDecode(std::string_view(b, b_len)));
   }
 
-  return (vStr);
+  return (v);
 }
 
-void DisplayEntryForm(HTTP &http, Preferences &prefs) {
+void DisplayRecordForm(HTTP &http, Preferences &prefs) {
 
-  std::string query_ads, query_doi, id_str(http.get.mFields.at("id")),
-      search(http.get.mFields["match"]), scheme(http.get.mFields["scheme"]);
+  auto get_end = http.get.end();
 
-  if (!search.empty()) {
-    search = "&amp;match=" + search + "&amp;scheme=" + scheme;
+  auto get_it = http.get["id"];
+  std::string_view id_str;
+  if (get_it != get_end) {
+    id_str = get_it->second;
   }
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
-  if (!d.good()) {
+  std::string search;
+  get_it = http.get["match"];
+  if (get_it != get_end) {
+    search = get_it->second;
+  }
+
+  std::string_view scheme;
+  get_it = http.get["scheme"];
+  if (get_it != get_end) {
+    scheme = get_it->second;
+  }
+
+  if (!search.empty()) {
+    search = "&match=" + search + "&scheme=";
+    search.append(scheme);
+  }
+
+  auto prefs_end = prefs.end();
+
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  std::unordered_map<std::string, std::string> mFields;
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
+    return;
+  }
+
+  Record *record_it;
+
+  std::string query_ads, query_doi;
   if (id_str != "-1") {
-    auto record_p = d.GetRecord(id_str);
-    mFields = record_p->mFields;
+    record_it = &(*d.GetRecord(id_str));
   } else {
-    mFields = http.post.mFields;
+    record_it = &(http.post);
     query_ads = " <button id=\"adsquery\" title=\"Query\" type=\"button\" "
-                "onclick=\"document.entry.action='" +
+                "onclick=\"document.record.action='" +
                 http.self +
-                "?action=queryADS&amp;id=-1';document.entry.submit();\">Query "
+                "?action=queryADS&id=-1';document.record.submit();\">Query "
                 "ADS</button> ";
     query_doi = " <button id=\"doiquery\" title=\"Query\" type=\"button\" "
-                "onclick=\"document.entry.action='" +
+                "onclick=\"document.record.action='" +
                 http.self +
-                "?action=queryDOI&amp;id=-1';document.entry.submit();\">Query "
+                "?action=queryDOI&id=-1';document.record.submit();\">Query "
                 "DOI</button> ";
   }
 
-  std::string type(mFields["type"]),
-      options(
-          "ARTICLE&INPROCEEDINGS&PROCEEDINGS&BOOK&BOOKLET&INBOOK&INCOLLECTION&"
-          "MASTERTHESIS&PHDTHESIS&TECHREPORT&MISC&MANUAL&UNPUBLISHED&SOFTWARE");
+  auto field_end = record_it->end();
+
+  std::string_view type;
+  auto field_it = (*record_it)["type"];
+  if (field_it != field_end) {
+    type = field_it->second;
+  }
+
+  std::string_view options =
+      "ARTICLE&INPROCEEDINGS&PROCEEDINGS&BOOK&BOOKLET&INBOOK&"
+      "INCOLLECTION&"
+      "MASTERTHESIS&PHDTHESIS&TECHREPORT&MISC&MANUAL&UNPUBLISHED&"
+      "SOFTWARE";
 
   auto uniq = d.UniqueValuesForKey("keywords", split_on_comma);
 
   std::string JSArray(Javascript::Array(uniq));
 
-  std::cout
-      << "<script type=\"text/javascript\">\n"
-      << "\n"
-      << "  var choices = " << JSArray << "\n"
-      << "\n"
-      << "</script>\n"
-      << "\n"
-      << "<form name=\"entry\" action=\"" << http.self
-      << "?action=update&amp;id=" << id_str << search
-      << "\" method=\"post\" enctype=\"multipart/form-data\">\n"
-      << "<input name=\"id\" type=\"hidden\" value=\"" << id_str << "\" />\n"
-      << "<table class=\"layout edit\">\n"
-      << "  <tr>\n"
-      << "    <td id=\"submenu\" colspan=\"2\">\n"
-      << "      <button id=\"save\" title=\"Save\" "
-         "type=\"submit\">Save</button> <button id=\"reset\" "
-         "title=\"Reset\" "
-         "type=\"reset\">Reset</button> <button id=\"delete\" "
-         "title=\"Delete "
-         "this entry\" type=\"button\" "
-         "onclick=\"javascript:if(confirm('Are "
-         "you sure you want to delete this entry?'))document.location='"
-      << http.self << "?action=delete&amp;id=" << id_str
-      << "';\">Delete</button>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h1>Modify</h1>\n"
-      << "      <h2>AdB</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       id\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      " << id_str << (id_str == "-1" ? "<i>(new)</i>" : "") << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "      <td>\n"
-      << "       Bibl. Code\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"biblcode\" class=\"config\" "
-         "name=\"biblcode\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["biblcode"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       ADS Code\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"ADScode\" class=\"config\" "
-         "name=\"ADScode\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["ADScode"]) << "\" />" << query_ads << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       DOI Code\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"doi\" class=\"config\" name=\"doi\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["doi"]) << "\" />" << query_doi << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Keyword(s)\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"keywords\" class=\"config\" "
-         "name=\"keywords\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["keywords"])
-      << "\" onkeydown=\"return checkchar(event);\" "
-         "onkeyup=\"checkinput(this);\" onblur=\"hide();\" "
-         "autocomplete=\"off\" />\n"
-      << "      <div class=\"autocomplete\" id=\"autocomplete\" "
-         "onmouseover=\"keepfocus=true;\" onmouseout=\"keepfocus=false\">\n"
-      << "      </div>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>BiBTeX</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Type\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      " << HTML::Select(options, type, "type", "evalType(this)")
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Title\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"title\" class=\"config\" "
-         "name=\"title\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["title"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Book title\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"booktitle\" class=\"config\" "
-         "name=\"booktitle\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["booktitle"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Editor\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"editor\" class=\"config\" "
-         "name=\"editor\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["editor"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Organization\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"organization\" class=\"config\" "
-         "name=\"organization\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["organization"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Address\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"address\" class=\"config\" "
-         "name=\"address\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["address"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Series\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"series\" class=\"config\" "
-         "name=\"series\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["series"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Edition\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"edition\" class=\"config\" "
-         "name=\"edition\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["edition"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       How published\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"howpublished\" class=\"config\" "
-         "name=\"howpublished\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["howpublished"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Chapter\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"chapter\" class=\"config\" "
-         "name=\"chapter\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["chapter"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       School\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"school\" class=\"config\" "
-         "name=\"school\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["school"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Institution\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"institution\" class=\"config\" "
-         "name=\"institution\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["institution"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Author(s)\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <textarea autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"authors\" class=\"config\" "
-         "name=\"author\">"
-      << Coders::HTMLEncode(mFields["author"]) << "</textarea>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Journal\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"journal\" class=\"config\" "
-         "name=\"journal\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["journal"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Volume\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"volume\" class=\"config\" "
-         "name=\"volume\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["volume"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Number\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"number\" class=\"config\" "
-         "name=\"number\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["number"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Pages\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"pages\" class=\"config\" "
-         "name=\"pages\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["pages"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Publisher\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"publisher\" class=\"config\" "
-         "name=\"publisher\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["publisher"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Month\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"month\" class=\"config\" "
-         "name=\"month\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["month"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Year\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"year\" class=\"config\" name=\"year\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["year"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Summary\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"summary\" class=\"config\" "
-         "name=\"summary\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["summary"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Note\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"note\" class=\"config\" name=\"note\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["note"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>ADS</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       ADS Services\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"ADSabstract\" type=\"checkbox\""
-      << (mFields["ADSabstract"] == "on" ? " checked=\"checked\"" : "")
-      << " /> Abstract (<i>link</i>) <input name=\"ADSfullpaper\" "
-         "type=\"checkbox\""
-      << (mFields["ADSfullpaper"] == "on" ? " checked=\"checked\"" : "")
-      << " /> PDF (<i>link</i>)\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>PDF</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       URL\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"url\" class=\"config\" name=\"URL\" "
-         "type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["URL"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Archive\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"archive\" type=\"checkbox\""
-      << (mFields["archive"] == "on" ? " checked=\"checked\"" : "")
-      << " /> Archive"
-      << (mFields["archive"] == "on"
-              ? "d <i>" + HTML::Filesize(prefs.preferences.mFields["base"] +
-                                         "archive/" + id_str + ".pdf")
-              : " (<i>downloads from ADS, or, when specified uses Upload "
-                "file</i>)\n")
-      << "</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Upload\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"pdf\" class=\"config\" name=\"pdf\" "
-         "type=\"file\" accept=\"application/pdf\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>Hardcopy</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Dossier\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" id=\"dossier\" class=\"config\" "
-         "name=\"dossier\" type=\"text\" value=\""
-      << Coders::HTMLEncode(mFields["dossier"]) << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>Extra</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "       Comments\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <textarea id=\"comments\" class=\"config\" rows=\"5\" "
-         "name=\"comments\">"
-      << Coders::HTMLEncode(mFields["comments"]) << "</textarea>\n"
-      << "    </td>\n"
-      << "  </tr>\n";
+  sout << "<script type=\"text/javascript\">\n"
+          "\n"
+          "  var choices = "
+       << JSArray
+       << "\n"
+          "\n"
+          "</script>\n"
+          "\n"
+          "<form name=\"record\" action=\""
+       << http.self << "?action=update&id=" << id_str << search
+       << "\" method=\"post\" enctype=\"multipart/form-data\">\n"
+          "<input name=\"id\" type=\"hidden\" value=\""
+       << id_str
+       << "\" />\n"
+          "<table class=\"layout edit\">\n"
+          "  <tr>\n"
+          "    <td id=\"submenu\" colspan=\"2\">\n"
+          "      <button id=\"save\" title=\"Save\" "
+          "type=\"submit\">Save</button> <button id=\"reset\" "
+          "title=\"Reset\" "
+          "type=\"reset\">Reset</button> <button id=\"delete\" "
+          "title=\"Delete "
+          "this record\" type=\"button\" "
+          "onclick=\"javascript:if(confirm('Are "
+          "you sure you want to delete this record?'))document.location='"
+       << http.self << "?action=delete&id=" << id_str
+       << "';\">Delete</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h1>Modify</h1>\n"
+          "      <h2>AdB</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       id\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      "
+       << id_str << (id_str == "-1" ? "<i>(new)</i>" : "")
+       << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "      <td>\n"
+          "       Bibl. Code\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"biblcode\" class=\"config\" "
+          "name=\"biblcode\" type=\"text\" value=\"";
+  field_it = (*record_it)["biblcode"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       ADS Code\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"ADScode\" class=\"config\" "
+          "name=\"ADScode\" type=\"text\" value=\"";
+  field_it = (*record_it)["ADScode"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />" << query_ads
+       << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       DOI Code\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"doi\" class=\"config\" name=\"doi\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["doi"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />" << query_doi
+       << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Keyword(s)\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"keywords\" class=\"config\" "
+          "name=\"keywords\" type=\"text\" value=\"";
+  field_it = (*record_it)["keywords"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" onkeydown=\"return checkchar(event);\" "
+          "onkeyup=\"checkinput(this);\" onblur=\"hide();\" "
+          "autocomplete=\"off\" />\n"
+          "      <div class=\"autocomplete\" id=\"autocomplete\" "
+          "onmouseover=\"keepfocus=true;\" onmouseout=\"keepfocus=false\">\n"
+          "      </div>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>BiBTeX</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Type\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      "
+       << HTML::Select(options, type, "type", "evalType(this)")
+       << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Title\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"title\" class=\"config\" "
+          "name=\"title\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["title"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Book title\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"booktitle\" class=\"config\" "
+          "name=\"booktitle\" type=\"text\" value=\"";
+  field_it = (*record_it)["booktitle"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Editor\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"editor\" class=\"config\" "
+          "name=\"editor\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["editor"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Organization\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"organization\" class=\"config\" "
+          "name=\"organization\" type=\"text\" value=\"";
+  field_it = (*record_it)["organization"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Address\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"address\" class=\"config\" "
+          "name=\"address\" type=\"text\" value=\"";
+  field_it = (*record_it)["address"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Series\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"series\" class=\"config\" "
+          "name=\"series\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["series"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Edition\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"edition\" class=\"config\" "
+          "name=\"edition\" type=\"text\" value=\"";
+  field_it = (*record_it)["edition"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       How published\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"howpublished\" class=\"config\" "
+          "name=\"howpublished\" type=\"text\" value=\"";
+  field_it = (*record_it)["howpublished"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Chapter\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"chapter\" class=\"config\" "
+          "name=\"chapter\" type=\"text\" value=\"";
+  field_it = (*record_it)["chapter"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       School\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"school\" class=\"config\" "
+          "name=\"school\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["school"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Institution\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"institution\" class=\"config\" "
+          "name=\"institution\" type=\"text\" value=\"";
+  field_it = (*record_it)["institution"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Author(s)\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <textarea autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"authors\" class=\"config\" "
+          "name=\"author\">";
+  field_it = (*record_it)["author"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "</textarea>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Journal\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"journal\" class=\"config\" "
+          "name=\"journal\" type=\"text\" value=\"";
+  field_it = (*record_it)["journal"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Volume\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"volume\" class=\"config\" "
+          "name=\"volume\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["volume"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Number\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"number\" class=\"config\" "
+          "name=\"number\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["number"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Pages\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"pages\" class=\"config\" "
+          "name=\"pages\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["pages"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Publisher\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"publisher\" class=\"config\" "
+          "name=\"publisher\" type=\"text\" value=\"";
+  field_it = (*record_it)["publisher"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Month\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"month\" class=\"config\" "
+          "name=\"month\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["month"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Year\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"year\" class=\"config\" name=\"year\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["year"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Summary\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"summary\" class=\"config\" "
+          "name=\"summary\" type=\"text\" value=\"";
+  field_it = (*record_it)["summary"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Note\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"note\" class=\"config\" name=\"note\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["note"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>ADS</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       ADS Services\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"ADSabstract\" type=\"checkbox\"";
+  field_it = (*record_it)["ADSabstract"];
+  if (field_it != field_end && field_it->second == "on") {
+    sout << " checked=\"checked\"";
+  }
+  sout << " /> Abstract (<i>link</i>) <input name=\"ADSfullpaper\" "
+          "type=\"checkbox\"";
+  field_it = (*record_it)["ADSfullpaper"];
+  if (field_it != field_end && field_it->second == "on") {
+    sout << " checked=\"checked\"";
+  }
+  sout << " /> PDF (<i>link</i>)\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>PDF</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       URL\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"url\" class=\"config\" name=\"URL\" "
+          "type=\"text\" value=\"";
+  field_it = (*record_it)["URL"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Archive\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"archive\" type=\"checkbox\"";
+  field_it = (*record_it)["archive"];
+  if (field_it != field_end && field_it->second == "on") {
+    sout << " checked=\"checked\"";
+  }
+  sout << " /> Archive";
+  if (field_it != field_end && field_it->second == "on") {
+    std::filesystem::path PDFPath(base_path / "archive" / id_str);
+    PDFPath.replace_extension("pdf");
+    sout << "d <i>" + HTML::Filesize(PDFPath);
+  } else {
+    sout << " (<i>downloads from ADS, or, when specified uses Upload "
+            "file</i>)\n";
+  }
+  sout << "</i>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Upload\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"pdf\" class=\"config\" name=\"pdf\" "
+          "type=\"file\" accept=\"application/pdf\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>Hardcopy</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Dossier\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" id=\"dossier\" class=\"config\" "
+          "name=\"dossier\" type=\"text\" value=\"";
+
+  field_it = (*record_it)["dossier"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>Extra</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "       Comments\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <textarea id=\"comments\" class=\"config\" rows=\"5\" "
+          "name=\"comments\">";
+
+  field_it = (*record_it)["comments"];
+  if (field_it != field_end) {
+    sout << Coders::HTMLEncode(field_it->second);
+  }
+  sout << "</textarea>\n"
+          "    </td>\n"
+          "  </tr>\n";
 
   static constexpr const char *usedKeys[] = {
       "id",           "biblcode",    "ADScode",      "doi",          "keywords",
@@ -1550,114 +1891,140 @@ void DisplayEntryForm(HTTP &http, Preferences &prefs) {
       "dossier",      "comments",    "archive",      "series"};
 
   for (const auto *s : usedKeys) {
-    auto f = mFields.find(s);
-    if (f != mFields.end()) {
-      mFields.erase(f);
+    field_it = (*record_it)[s];
+    if (field_it != field_end) {
+      record_it->mFields.erase(field_it);
     }
   }
 
-  for (const auto &field : mFields) {
+  for (const auto &field_it : record_it->mFields) {
 
-    std::cout << "  <tr>\n"
-              << "    <td>\n"
-              << field.first << "\n"
-              << "    </td>\n"
-              << "    <td>\n"
-              << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-                 "autocomplete=\"off\" id=\""
-              << field.first << "\" class=\"config\" name=\"" << field.first
-              << "\" type=\"text\" value=\"" << Coders::HTMLEncode(field.second)
-              << "\" /> <button id=\"del\" title=\"Del\" type=\"button\" "
-                 "onclick=\"delExtraKeyValuePair(this);\">Del</button>\n"
-              << "    </td>\n"
-              << "  </tr>\n";
+    sout << "  <tr>\n"
+            "    <td>\n"
+         << field_it.first
+         << "\n"
+            "    </td>\n"
+            "    <td>\n"
+            "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+            "autocomplete=\"off\" id=\""
+         << field_it.first << "\" class=\"config\" name=\"" << field_it.first
+         << "\" type=\"text\" value=\"" << Coders::HTMLEncode(field_it.second)
+         << "\" /> <button id=\"del\" title=\"Del\" type=\"button\" "
+            "onclick=\"delExtraKeyValuePair(this);\">Del</button>\n"
+            "    </td>\n"
+            "  </tr>\n";
   }
 
-  std::cout
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <button id=\"add\" title=\"Add\" type=\"button\" "
-         "onclick=\"addExtraKeyValuePair();\">Add</button>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td id=\"submenu\" colspan=\"2\">\n"
-      << "      <button id=\"save\" title=\"Save\" "
-         "type=\"submit\">Save</button> <button id=\"reset\" title=\"Reset\" "
-         "type=\"reset\">Reset</button> <button id=\"delete\" title=\"Delete "
-         "this entry\" type=\"button\" onclick=\"javascript:if(confirm('Are "
-         "you sure you want to delete this entry?'))document.location='"
-      << http.self << "?action=delete&amp;id=" << id_str
-      << "';\">Delete</button>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "</table>\n"
-      << "</form>\n\n"
-      << "\n"
-      << "<script type=\"text/javascript\">\n"
-      << "\n"
-      << "  evalType(document.forms.entry.type);\n"
-      << "\n"
-      << "  function addExtraKeyValuePair(){\n"
-      << "    var key    = prompt('Please provide a key', 'your key');\n"
-      << "    if(key != '' && key != null){\n"
-      << "      var tables = document.getElementsByTagName('table');\n"
-      << "      var table  = tables[tables.length - 2];\n"
-      << "      var row    = "
-         "table.tBodies[0].insertBefore(document.createElement('tr'), "
-         "table.tBodies[0].rows[table.tBodies[0].rows.length - 2]);\n"
-      << "      var td     = row.appendChild(document.createElement('td'));\n"
-      << "      var text   = td.appendChild(document.createTextNode(key));\n"
-      << "      var td     = row.appendChild(document.createElement('td'));\n"
-      << "      td.innerHTML = '<input autocorrect=\"off\" "
-         "autocapitalize=\"off\" autocomplete=\"off\" class=\"config\" "
-         "name=\"' + key + '\" type=\"text\" value=\"\"></input> <button "
-         "title=\"Del\" type=\"button\" "
-         "onclick=\"delExtraKeyValuePair(this);\">Del</button>';\n"
-      << "      return(true);\n"
-      << "  }\n"
-      << "}\n"
-      << "\n"
-      << "function delExtraKeyValuePair(element){\n"
-      << "  "
-         "element.parentNode.parentNode.parentNode.removeChild(element."
-         "parentNode.parentNode);\n"
-      << "}\n"
-      << "\n"
-      << "</script>\n";
+  sout << "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <button id=\"add\" title=\"Add\" type=\"button\" "
+          "onclick=\"addExtraKeyValuePair();\">Add</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td id=\"submenu\" colspan=\"2\">\n"
+          "      <button id=\"save\" title=\"Save\" "
+          "type=\"submit\">Save</button> <button id=\"reset\" "
+          "title=\"Reset\" "
+          "type=\"reset\">Reset</button> <button id=\"delete\" "
+          "title=\"Delete "
+          "this record\" type=\"button\" "
+          "onclick=\"javascript:if(confirm('Are "
+          "you sure you want to delete this record?'))document.location='"
+       << http.self << "?action=delete&id=" << id_str
+       << "';\">Delete</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n"
+          "</form>\n\n"
+          "\n"
+          "<script type=\"text/javascript\">\n"
+          "\n"
+          "  evalType(document.forms.record.type);\n"
+          "\n"
+          "  function addExtraKeyValuePair(){\n"
+          "    var key    = prompt('Please provide a key', 'your key');\n"
+          "    if(key != '' && key != null){\n"
+          "      var tables = document.getElementsByTagName('table');\n"
+          "      var table  = tables[tables.length - 2];\n"
+          "      var row    = "
+          "table.tBodies[0].insertBefore(document.createElement('tr'), "
+          "table.tBodies[0].rows[table.tBodies[0].rows.length - 2]);\n"
+          "      var td     = "
+          "row.appendChild(document.createElement('td'));\n"
+          "      var text   = "
+          "td.appendChild(document.createTextNode(key));\n"
+          "      var td     = "
+          "row.appendChild(document.createElement('td'));\n"
+          "      td.innerHTML = '<input autocorrect=\"off\" "
+          "autocapitalize=\"off\" autocomplete=\"off\" class=\"config\" "
+          "name=\"' + key + '\" type=\"text\" value=\"\"></input> <button "
+          "title=\"Del\" type=\"button\" "
+          "onclick=\"delExtraKeyValuePair(this);\">Del</button>';\n"
+          "      return(true);\n"
+          "  }\n"
+          "}\n"
+          "\n"
+          "function delExtraKeyValuePair(element){\n"
+          "  "
+          "element.parentNode.parentNode.parentNode.removeChild(element."
+          "parentNode.parentNode);\n"
+          "}\n"
+          "\n"
+          "</script>\n";
 }
 
 void Update(HTTP &http, Preferences &prefs) {
 
-  if (http.post.mFields.empty()) {
+  auto prefs_end = prefs.end();
+
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
-  if (!d.good()) {
+  auto post_end = http.post.end();
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     return;
   }
 
-  d.SetRecord(http.post, http.get.mFields.at("id"));
+  auto post_it = http.post["id"];
+  if (post_it == post_end) {
+    DisplayRecord(http, prefs);
+  }
+
+  d.SetRecord(http.post, post_it->second);
   d.Commit();
+
   http.get.mFields.at("id") = http.post.mFields.at("id");
 
-  std::filesystem::path TargetPath(prefs.preferences.mFields["base"] +
-                                   "archive/" + http.post.mFields.at("id") +
-                                   ".pdf");
+  std::filesystem::path TargetPath = base_path / "archive" / post_it->second;
+  TargetPath.replace_extension("pdf");
 
-  if (http.post.mFields["archive"] == "on") {
-
+  post_it = http.post["archive"];
+  if (post_it != post_end && post_it->second == "on") {
     if (http.file_data.empty() && !std::filesystem::exists(TargetPath)) {
+      std::string command(base_path.string() + "csh/AdBArchiver.csh " +
+                          base_path.string() + " " + "'https://");
+      prefs_it = prefs["adsurl"];
+      if (prefs_it != prefs_end) {
+        command = command.append(prefs_it->second);
+      }
+      command += "/pdf/";
+      prefs_it = prefs["AScode"];
+      if (prefs_it != prefs_end) {
+        command = command.append(prefs_it->second);
+      }
+      command += "' " + TargetPath.string();
 
-      std::string cmd(
-          prefs.preferences.mFields["base"] + "csh/AdBArchiver.csh " +
-          prefs.preferences.mFields["base"] + " " + "'https://" +
-          prefs.preferences.mFields["adsurl"] + "/pdf/" +
-          http.post.mFields["ADScode"] + "' " + TargetPath.string());
-
-      if (system(cmd.c_str()) == -1) {
+      if (system(command.c_str()) == -1) {
         return;
       }
 
@@ -1668,9 +2035,9 @@ void Update(HTTP &http, Preferences &prefs) {
         }
       }
     } else if (!http.file_data.empty()) {
-      std::ofstream ofstr(TargetPath.c_str(), std::ios::binary);
+      std::ofstream ofstr(TargetPath, std::ios::binary);
 
-      ofstr.write(http.file_data.c_str(), http.file_data.length());
+      ofstr.write(http.file_data.data(), http.file_data.length());
 
       ofstr.close();
     }
@@ -1680,60 +2047,106 @@ void Update(HTTP &http, Preferences &prefs) {
       return;
     }
   }
-
-  DisplayEntry(http, prefs);
+  DisplayRecord(http, prefs);
 }
 
 void QueryADS(HTTP &http, Preferences &prefs) {
 
-  std::string post = "{\"bibcode\":[\"" + http.post.mFields["ADScode"] + "\"]}",
-              authorization = "Authorization: Bearer " +
-                              prefs.preferences.mFields["adstoken"],
-              content_type = "Content-Type: application/json";
+  auto post_end = http.post.end();
 
-  std::vector<std::string> headers = {authorization, content_type};
+  std::string_view ADScode;
+  auto post_it = http.post["ADScode"];
+  if (post_it != post_end) {
+    ADScode = post_it->second;
+  }
 
-  std::string bibtex =
-      http.SecurePost(ADS_API_URL, post, headers, 443,
-                      prefs.preferences.mFields["pem"].c_str());
+  auto prefs_end = prefs.end();
+
+  std::string_view adstoken;
+  auto prefs_it = prefs["adstoken"];
+  if (prefs_it != prefs_end) {
+    adstoken = prefs_it->second;
+  }
+
+  std::string_view pem;
+  prefs_it = prefs["pem"];
+  if (prefs_it != prefs_end) {
+    pem = prefs_it->second;
+  }
+
+  std::string post("{\"bibcode\":[\"");
+  post = post.append(ADScode) + "\"]}";
+
+  std::string authorization("Authorization: Bearer ");
+  authorization.append(adstoken);
+
+  std::string content_type("Content-Type: application/json");
+
+  std::vector<std::string_view> headers = {authorization, content_type};
+
+  std::string bibtex = http.SecurePost(ADS_API_URL, post, headers, 443, pem);
 
   rapidjson::Document json;
   if (json.Parse(bibtex.c_str()).HasParseError() || !json.HasMember("export")) {
-    http.post.mFields["ADScode"] += " (not found)";
-    DisplayEntryForm(http, prefs);
+    pool.begin();
+    pool << ADScode << " (not found)";
+    http.post.mFields["ADScode"] = pool.sv();
+    DisplayRecordForm(http, prefs);
     return;
   }
 
   size_t size = 0;
 
-  http.post = BibTeX::Parse(json["export"].GetString(), size);
+  http.post = BibTeX::Parse(json["export"].GetString(), size, pool);
 
   http.post.mFields["ADScode"] = http.post.mFields["biblcode"];
 
-  DisplayEntryForm(http, prefs);
+  DisplayRecordForm(http, prefs);
 }
 
 void QueryDOI(HTTP &http, Preferences &prefs) {
 
-  std::string doi(http.post.mFields["doi"]),
-      url(prefs.preferences.mFields["doilookupurl"] + "/v1/works/" +
-          Coders::URLEncode(doi) + "/transform");
-
-  std::vector<std::string> headers = {
-      "Accept: text/bibliography; style=bibtex"};
-
-  std::string bibtex(http.SecureGet(url, headers, 443,
-                                    prefs.preferences.mFields["pem"].c_str()));
-
-  size_t size = 0;
-  http.post = BibTeX::Parse(bibtex, size);
-
-  auto it = http.post.mFields.find("doi");
-  if (it == http.post.mFields.end()) {
-    http.post.mFields["doi"] = doi;
+  std::string_view doi;
+  auto post_it = http.post["doi"];
+  if (post_it != http.post.end()) {
+    doi = post_it->second;
   }
 
-  DisplayEntryForm(http, prefs);
+  auto prefs_end = prefs.end();
+
+  std::string url;
+  auto prefs_it = prefs["doilookupurl"];
+  if (prefs_it != prefs_end) {
+    url = prefs_it->second;
+  }
+  url += "/v1/works/" + Coders::URLEncode(doi) + "/transform";
+
+  std::string_view pem;
+  post_it = prefs["pem"];
+  if (post_it != prefs_end) {
+    pem = post_it->second;
+  }
+
+  std::vector<std::string_view> headers = {
+      "Accept: text/bibliography; style=bibtex"};
+
+  std::string bibtex(http.SecureGet(url, headers, 443, pem));
+
+  size_t size = 0;
+
+  http.post = BibTeX::Parse(bibtex, size, pool);
+
+  auto node = http.post.mFields.extract("DOI");
+  if (!node.empty()) {
+    node.key() = "doi";
+    http.post.mFields.insert(std::move(node));
+  } else {
+    pool.begin();
+    pool << doi << " (not found)";
+    http.post.mFields["doi"] = pool.sv();
+  }
+
+  DisplayRecordForm(http, prefs);
 }
 
 void DisplayInfo([[maybe_unused]] HTTP &http, Preferences &prefs) {
@@ -1746,47 +2159,54 @@ void DisplayInfo([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
   strftime(year, 5, "%Y", timeinfo);
 
-  std::cout << "<table class=\"layout info\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"col1\">\n"
-            << "      <h1>Info</h1>\n"
-            << "      <h2>General</h2>\n"
-            << "    </td>\n"
-            << "    <td id=\"col2\" rowspan=\"2\">\n"
-            << "      <img src=\"" << prefs.preferences.mFields["baseurl"]
-            << "images/logo.png\" alt=\"logo\" />\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td colspan=\"2\">\n"
-            << "      <p id=\"disclaimer\">\n"
-            << "        AdB is an article database writen in C/C++ and "
-               "developed by "
-               "Dr. C. Boersma. This is "
-            << CURR_VERSION
-            << ". The latest version can be downloaded <a href=\"" +
-                   std::string(LATEST_URL) +
-                   "\">here</a>. The developer can be contacted at <a "
-                   "href=\"mailto:"
-            << CONTACT << "\">" << CONTACT << "</a>\n"
-            << "      </p>\n"
-            << "      <p id=\"copyright\">\n"
-            << "        Christiaan Boersma 2004 - " << year << "\n"
-            << "      </p>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n";
+  std::string_view baseurl;
+  auto prefs_it = prefs["baseurl"];
+  if (prefs_it != prefs.end()) {
+    baseurl = prefs_it->second;
+  }
+
+  sout << "<table class=\"layout info\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\">\n"
+          "      <h1>Info</h1>\n"
+          "      <h2>General</h2>\n"
+          "    </td>\n"
+          "    <td id=\"col2\" rowspan=\"2\">\n"
+       << "      <img src=\"" << baseurl
+       << "images/logo.png\" alt=\"logo\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <p id=\"disclaimer\">\n"
+          "        AdB is an article database writen in C/C++ and "
+          "developed by "
+          "Dr.&nbsp;C.&nbsp;Boersma. This is "
+       << CURR_VERSION ". The latest version can be downloaded <a href=\""
+       << std::string(LATEST_URL)
+       << "\">here</a>. The developer can be contacted at <a "
+          "href=\"mailto:" CONTACT "\">" CONTACT "</a>\n"
+          "      </p>\n"
+          "      <p id=\"copyright\">\n"
+          "        Christiaan Boersma 2004 - "
+       << year
+       << "\n"
+          "      </p>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }
 
 void DisplaySplash([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
-  if (prefs.preferences.mFields["splash"] == "true") {
-    std::cout << "<table class=\"layout splash\">\n"
-              << "  <tr>\n"
-              << "    <td id=\"image\">\n"
-              << "    </td>\n"
-              << "  </tr>\n"
-              << "</table>\n";
+  auto prefs_it = prefs["splash"];
+  if (prefs_it != prefs.end() && prefs_it->second == "true") {
+    sout << "<table class=\"layout splash\">\n"
+            "  <tr>\n"
+            "    <td id=\"image\">\n"
+            "    </td>\n"
+            "  </tr>\n"
+            "</table>\n";
 
   } else {
     DisplayDataList(http, prefs);
@@ -1795,485 +2215,602 @@ void DisplaySplash([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
 void DisplayConfigForm(HTTP &http, Preferences &prefs) {
 
-  std::string splash, translate, table, updates;
+  auto prefs_end = prefs.end();
 
-  if (prefs.preferences.mFields["splash"] == "true") {
-    splash = " checked=\"checked\"";
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
   }
 
-  if (prefs.preferences.mFields["translate"] == "true") {
-    translate = " checked=\"checked\"";
+  std::string_view plugins;
+  prefs_it = prefs["plugins"];
+  if (prefs_it != prefs_end) {
+    plugins = prefs_it->second;
   }
 
-  if (prefs.preferences.mFields["table"] == "true") {
-    table = " checked=\"checked\"";
+  std::string_view scheme;
+  prefs_it = prefs["scheme"];
+  if (prefs_it != prefs_end) {
+    scheme = prefs_it->second;
   }
 
-  if (prefs.preferences.mFields["updates"] == "true") {
-    updates = " checked=\"checked\"";
+  sout << "<form name=\"config\" action=\"" << http.self
+       << "?action=config\" method=\"post\">\n"
+          "<input type=\"hidden\" name=\"save\" value=\"true\" />\n"
+          "<table class=\"layout config\">\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h1>Configuration</h1>\n"
+          "      <h2>General</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      Base directory \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"base\" "
+          "value=\""
+       << base_path.string()
+       << "\" /> \n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      Database file \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"data\" "
+          "value=\"";
+  prefs_it = prefs["data"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> ";
+  if (prefs_it != prefs_end) {
+    std::filesystem::path DataPath(base_path / prefs_it->second);
+    sout << HTML::Filesize((DataPath));
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      Abbreviation file \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"abbreviation\" value=\"";
+  prefs_it = prefs["abbreviation"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> ";
+  if (prefs_it != prefs_end) {
+    std::filesystem::path AbbreviationPath(base_path / prefs_it->second);
+    sout << HTML::Filesize(AbbreviationPath);
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Themes directory \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"plugins\" "
+          "value=\""
+       << plugins
+       << "\" /> \n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Base URL \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"baseurl\" "
+          "value=\"";
+  prefs_it = prefs["baseurl"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Check for updates\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"updates\" type=\"checkbox\" value=\"true\"";
+  prefs_it = prefs["updates"];
+  if (prefs_it != prefs_end && prefs_it->second == "true") {
+    sout << " checked=\"checked\"";
+  }
+  sout << " />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Administrator\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"administrator\" value=\"";
+  prefs_it = prefs["administrator"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>ADS</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Url\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"adsurl\" "
+          "value=\"";
+  prefs_it = prefs["adsurl"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> <i>no leading http</i>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Token\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"adstoken\" value=\"";
+  prefs_it = prefs["adstoken"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> <a "
+          "href=\"https://ui.adsabs.harvard.edu/user/account/login\"><i>get "
+          "your token</i></a>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>DOI</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Url for display\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"doiurl\" "
+          "value=\"";
+  prefs_it = prefs["doiurl"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> <i>no leading http(s)</i>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "     Url for lookup\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"doilookupurl\" value=\"";
+  prefs_it = prefs["doilookupurl"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> <i>no leading http(s)</i>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      CrossRef score\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"doicrossrefscore\" value=\"";
+  prefs_it = prefs["doicrossrefscore"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>SSL</h2>\n"
+          "    </td>\n"
+          "  <tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      PEM\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" name=\"pem\" "
+          "value=\"";
+  prefs_it = prefs["pem"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>Look</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Splash screen at startup\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"splash\" type=\"checkbox\" value=\"true\"";
+  prefs_it = prefs["splash"];
+  if (prefs_it != prefs_end && prefs_it->second == "true") {
+    sout << " checked=\"checked\"";
+  }
+  sout << "/>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Theme\n"
+          "    </td>\n"
+          "    <td>\n";
+  if (!plugins.empty()) {
+    std::filesystem::path plugin_path(base_path / plugins);
+    sout << HTML::Select(list_themes(plugin_path), scheme, "scheme", "");
+  } else {
+    sout << "no plugins available";
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Number authors to Display\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"nauthors\" value=\"";
+  prefs_it = prefs["nauthors"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> <i>-1 is all</i>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      View as Table\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"table\" type=\"checkbox\" value=\"true\"";
+  prefs_it = prefs["table"];
+  if (prefs_it != prefs_end && prefs_it->second == "true") {
+    sout << " checked=\"checked\"";
+  }
+  sout << " />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>Export</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      Key code\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input type=\"radio\" name=\"key\" value=\"biblcode\"";
+  prefs_it = prefs["key"];
+  if (prefs_it != prefs_end && prefs_it->second == "biblcode") {
+    sout << " checked=\"checked\"";
+  }
+  sout << "\" /> Bibl.\n"
+          "      <input type=\"radio\" name=\"key\" value=\"ADScode\"";
+  if (prefs_it != prefs_end && prefs_it->second == "ADScode") {
+    sout << " checked=\"checked\"";
+  }
+  sout << "\" /> ADS\n"
+          "      <input type=\"radio\" name=\"key\" value=\"doi\"";
+  if (prefs_it != prefs_end && prefs_it->second == "doi") {
+    sout << " checked=\"checked\"";
+  }
+  sout << "\" /> DOI\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      BibTeX file \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"bibtex\" "
+          "value=\"";
+  prefs_it = prefs["bibtex"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> ";
+  if (prefs_it != prefs_end) {
+    std::filesystem::path BibTeXPath(base_path / prefs_it->second);
+    sout << HTML::Filesize(BibTeXPath);
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      MSWord file \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"msword\" "
+          "value=\"";
+  prefs_it = prefs["msword"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> ";
+  if (prefs_it != prefs_end) {
+    std::filesystem::path MSWordPath(base_path / prefs_it->second);
+    sout << HTML::Filesize(MSWordPath);
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td width=\"20%\">\n"
+          "      Text file \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"text\" "
+          "value=\"";
+  prefs_it = prefs["text"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> ";
+  if (prefs_it != prefs_end) {
+    std::filesystem::path TextPath(base_path / prefs_it->second);
+    sout << HTML::Filesize(TextPath);
+  }
+  sout << "\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Translate abbreviations\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input name=\"translate\" type=\"checkbox\" value=\"true\"";
+  prefs_it = prefs["translate"];
+  if (prefs_it != prefs_end && prefs_it->second == "true") {
+    sout << " checked=\"checked\"";
   }
 
-  std::cout
-      << "<form name=\"config\" action=\"" << http.self
-      << "?action=config\" method=\"post\">\n"
-      << "<input type=\"hidden\" name=\"save\" value=\"true\" />\n"
-      << "<table class=\"layout config\">\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h1>Configuration</h1>\n"
-      << "      <h2>General</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      Base directory \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" name=\"base\" "
-         "value=\""
-      << prefs.preferences.mFields["base"] << "\" /> \n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      Database file \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" name=\"data\" "
-         "value=\""
-      << prefs.preferences.mFields["data"] << "\" /> "
-      << HTML::Filesize(prefs.preferences.mFields["base"] +
-                        prefs.preferences.mFields["data"])
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      Abbreviation file \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"abbreviation\" value=\""
-      << prefs.preferences.mFields["abbreviation"] << "\" /> "
-      << HTML::Filesize(prefs.preferences.mFields["base"] +
-                        prefs.preferences.mFields["abbreviation"])
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Themes directory \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"plugins\" "
-         "value=\""
-      << prefs.preferences.mFields["plugins"] << "\" /> \n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Base URL \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"baseurl\" "
-         "value=\""
-      << prefs.preferences.mFields["baseurl"] << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Check for updates\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"updates\" type=\"checkbox\" value=\"true\""
-      << updates << " />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Administrator\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"administrator\" value=\""
-      << prefs.preferences.mFields["administrator"] << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>ADS</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Url\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"adsurl\" "
-         "value=\""
-      << prefs.preferences.mFields["adsurl"] << "\" /> <i>no leading http</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Token\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"adstoken\" value=\""
-      << prefs.preferences.mFields["adstoken"]
-      << "\" /> <a "
-         "href=\"https://ui.adsabs.harvard.edu/user/account/login\"><i>get "
-         "your token</i></a>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>DOI</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Url for display\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"doiurl\" "
-         "value=\""
-      << prefs.preferences.mFields["doiurl"]
-      << "\" /> <i>no leading http(s)</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "     Url for lookup\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"doilookupurl\" value=\""
-      << prefs.preferences.mFields["doilookupurl"]
-      << "\" /> <i>no leading http(s)</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      CrossRef score\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"doicrossrefscore\" value=\""
-      << prefs.preferences.mFields["doicrossrefscore"] << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>SSL</h2>\n"
-      << "    </td>\n"
-      << "  <tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      PEM\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" name=\"pem\" "
-         "value=\""
-      << prefs.preferences.mFields["pem"] << "\" />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>Look</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Splash screen at startup\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"splash\" type=\"checkbox\" value=\"true\""
-      << splash << " />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Theme\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << HTML::Select(list_themes(prefs.preferences.mFields["base"] +
-                                  prefs.preferences.mFields["plugins"]),
-                      prefs.preferences.mFields["scheme"], "scheme", "")
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Number authors to Display\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"nauthors\" value=\""
-      << prefs.preferences.mFields["nauthors"] << "\" /> <i>-1 is all</i>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      View as Table\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"table\" type=\"checkbox\" value=\"true\"" << table
-      << " />\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>Export</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      Key code\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input type=\"radio\" name=\"key\" value=\"biblcode\" "
-      << (prefs.preferences.mFields["key"] == "biblcode" ? "checked=\"checked\""
-                                                         : "")
-      << "\" /> Bibl.\n"
-      << "      <input type=\"radio\" name=\"key\" value=\"ADScode\" "
-      << (prefs.preferences.mFields["key"] == "ADScode" ? "checked=\"checked\""
-                                                        : "")
-      << "\" /> ADS\n"
-      << "      <input type=\"radio\" name=\"key\" value=\"doi\" "
-      << (prefs.preferences.mFields["key"] == "doi" ? "checked=\"checked\""
-                                                    : "")
-      << "\" /> DOI\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      BibTeX file \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"bibtex\" "
-         "value=\""
-      << prefs.preferences.mFields["bibtex"] << "\" /> "
-      << HTML::Filesize(prefs.preferences.mFields["base"] +
-                        prefs.preferences.mFields["bibtex"])
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      MSWord file \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"msword\" "
-         "value=\""
-      << prefs.preferences.mFields["msword"] << "\" /> "
-      << HTML::Filesize(prefs.preferences.mFields["base"] +
-                        prefs.preferences.mFields["msword"])
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td width=\"20%\">\n"
-      << "      Text file \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" name=\"text\" "
-         "value=\""
-      << prefs.preferences.mFields["text"] << "\" /> "
-      << HTML::Filesize(prefs.preferences.mFields["base"] +
-                        prefs.preferences.mFields["text"])
-      << "\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Translate abbreviations\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input name=\"translate\" type=\"checkbox\" value=\"true\""
-      << translate << "\" /> BibTeX\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td colspan=\"2\">\n"
-      << "      <h2>Security</h2>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Credential expiration period\n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"expire\" "
-         "value=\""
-      << prefs.preferences.mFields["expire"] << "\"/> seconds\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "   <tr>\n"
-      << "     <td colspan=\"2\">\n"
-      << "       &nbsp;\n"
-      << "     </td>\n"
-      << "   </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Username \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"text\" "
-         "name=\"username\" value=\""
-      << prefs.preferences.mFields["username"] << "\" /> \n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      New password \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"password\" "
-         "name=\"password\" /> \n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td>\n"
-      << "      Confirm password \n"
-      << "    </td>\n"
-      << "    <td>\n"
-      << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-         "autocomplete=\"off\" class=\"config\" type=\"password\" "
-         "name=\"confirmpassword\" /> \n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "  <tr>\n"
-      << "    <td id=\"submenu\" colspan=\"2\">\n"
-      << "      <button title=\"Save config\" type=\"button\" "
-         "onclick=\"if(document.config.password.value==''||document.config."
-         "password.value==document.config.confirmpassword.value)document."
-         "config.submit();else{alert('Confirmation password does not match "
-         "new "
-         "password, please try again');}\">Save</button> <button "
-         "title=\"Undo "
-         "changes\" type=\"reset\" onmouseover=\"window.status='Undo "
-         "changes';return true\">Undo</button>\n"
-      << "    </td>\n"
-      << "  </tr>\n"
-      << "</table>\n"
-      << "</form>\n";
+  sout << "\" /> BibTeX\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td colspan=\"2\">\n"
+          "      <h2>Security</h2>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Credential expiration period\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"expire\" "
+          "value=\"";
+  prefs_it = prefs["expire"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\"/> seconds\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "   <tr>\n"
+          "     <td colspan=\"2\">\n"
+          "       &nbsp;\n"
+          "     </td>\n"
+          "   </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Username \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"text\" "
+          "name=\"username\" value=\"";
+  prefs_it = prefs["username"];
+  if (prefs_it != prefs_end) {
+    sout << prefs_it->second;
+  }
+  sout << "\" /> \n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      New password \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"password\" "
+          "name=\"password\" /> \n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      Confirm password \n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"config\" type=\"password\" "
+          "name=\"confirmpassword\" /> \n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td id=\"submenu\" colspan=\"2\">\n"
+          "      <button title=\"Save config\" type=\"button\" "
+          "onclick=\"if(document.config.password.value==''||document."
+          "config."
+          "password.value==document.config.confirmpassword.value)document."
+          "config.submit();else{alert('Confirmation password does not "
+          "match "
+          "new "
+          "password, please try again');}\">Save</button> <button "
+          "title=\"Undo "
+          "changes\" type=\"reset\" onmouseover=\"window.status='Undo "
+          "changes';return true\">Undo</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n"
+          "</form>\n";
 }
 
 void DisplayImportForm(HTTP &http, [[maybe_unused]] Preferences &prefs) {
-
-  std::cout << "<form name=\"importBibTeX\" action=\"" << http.self
-            << "?action=importBibTeX\" enctype=\"multipart/form-data\" "
-               "method=\"post\">\n"
-            << "<table class=\"layout import\">\n"
-            << "<tr>\n"
-            << "  <td colspan=\"2\">\n"
-            << "    <h1>Import</h1>\n"
-            << "    <h2>BibTeX</h2> \n"
-            << "  </td>\n"
-            << "</tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      BibTeX File\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << "      <input autocorrect=\"off\" autocapitalize=\"off\" "
-               "autocomplete=\"off\" class=\"file\" type=\"file\" "
-               "name=\"upload\" />\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "<tr>\n"
-            << "  <td id=\"submenu\" colspan=\"2\">\n"
-            << "    <button id=\"importBibTeX\" title=\"Import\" "
-               "type=\"submit\">Import BibTeX</button> <button id=\"reset\" "
-               "title=\"Reset\" type=\"reset\">Reset</button>\n"
-            << "  </td>\n"
-            << "</tr>\n"
-            << "</table>\n"
-            << "</form>\n";
+  sout << "<form name=\"importBibTeX\" action=\"" << http.self
+       << "?action=importBibTeX\" enctype=\"multipart/form-data\" "
+          "method=\"post\">\n"
+          "<table class=\"layout import\">\n"
+          "<tr>\n"
+          "  <td colspan=\"2\">\n"
+          "    <h1>Import</h1>\n"
+          "    <h2>BibTeX</h2> \n"
+          "  </td>\n"
+          "</tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      BibTeX File\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      <input autocorrect=\"off\" autocapitalize=\"off\" "
+          "autocomplete=\"off\" class=\"file\" type=\"file\" "
+          "name=\"upload\" />\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "<tr>\n"
+          "  <td id=\"submenu\" colspan=\"2\">\n"
+          "    <button id=\"importBibTeX\" title=\"Import\" "
+          "type=\"submit\">Import BibTeX</button> <button "
+          "id=\"reset\" "
+          "title=\"Reset\" type=\"reset\">Reset</button>\n"
+          "  </td>\n"
+          "</tr>\n"
+          "</table>\n"
+          "</form>\n";
 }
 
 void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
-  std::cout << "<table class=\"layout reindex\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"col1\" colspan=\"3\">\n"
-            << "      <h1>Reindex</h1>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th id=\"old\">\n"
-            << "      old\n"
-            << "    </th>\n"
-            << "    <th id=\"new\">\n"
-            << "      new\n"
-            << "    </th>\n"
-            << "    <th id=\"pdf\">\n"
-            << "      PDF\n"
-            << "    </th>\n"
-            << "  </tr>\n";
+  sout << "<table class=\"layout reindex\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\" colspan=\"3\">\n"
+          "      <h1>Reindex</h1>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th id=\"old\">\n"
+          "      old\n"
+          "    </th>\n"
+          "    <th id=\"new\">\n"
+          "      new\n"
+          "    </th>\n"
+          "    <th id=\"pdf\">\n"
+          "      PDF\n"
+          "    </th>\n"
+          "  </tr>\n";
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  if (!d.ReindexRecords([&prefs](Record &record, long id) {
-        std::cout << "  <tr>\n"
-                  << "    <td>\n"
-                  << record.mFields["id"] << "\n"
-                  << "    </td>\n"
-                  << "    <td>\n"
-                  << id << "\n"
-                  << "    </td>\n"
-                  << "    <td>\n";
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
+    return;
+  }
 
-        std::filesystem::path SourcePath(prefs.preferences.mFields["base"] +
-                                         "archive/" + record.mFields["id"] +
-                                         ".pdf");
+  if (!d.ReindexRecords([&base_path](Record &record, long id) {
+        sout << "  <tr>\n"
+                "    <td>\n"
+             << record["id"]->second
+             << "\n"
+                "    </td>\n"
+                "    <td>\n"
+             << id
+             << "\n"
+                "    </td>\n"
+                "    <td>\n";
 
-        if (record.mFields["archive"] == "on" &&
+        std::filesystem::path SourcePath(base_path / "archive" /
+                                         record["id"]->second);
+        SourcePath.replace_extension("pdf");
+
+        auto record_it = record["archive"];
+        if (record_it != record.end() && record_it->second == "on" &&
             std::filesystem::exists(SourcePath)) {
-          std::filesystem::path DestinationPath(
-              prefs.preferences.mFields["base"] + "archive/" +
-              std::to_string(id) + ".pdf");
+          std::filesystem::path DestinationPath(base_path / "archive/" /
+                                                std::to_string(id));
+          DestinationPath.replace_extension(".pdf");
           std::filesystem::rename(SourcePath, DestinationPath);
-          std::cout << "      yes\n";
+          sout << "      yes\n";
         } else {
-          std::cout << "      no\n";
+          sout << "      no\n";
         }
 
-        std::cout << "    </td>\n"
-                  << "  </tr>\n";
+        sout << "    </td>\n"
+                "  </tr>\n";
 
         return true;
       })) {
@@ -2282,28 +2819,39 @@ void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
 
   d.Commit();
 
-  std::cout << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td>\n"
-            << "      &nbsp;\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << "      &nbsp;\n"
-            << "    </td>\n"
-            << "    <td>\n"
-            << "      &nbsp;\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n";
+  sout << "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td>\n"
+          "      &nbsp;\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      &nbsp;\n"
+          "    </td>\n"
+          "    <td>\n"
+          "      &nbsp;\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }
 
 void DisplayKeywords(HTTP &http, Preferences &prefs) {
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
+  }
+
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     return;
   }
 
@@ -2311,23 +2859,25 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
 
   size_t n_uniq = uniq.size();
 
-  std::cout << "<table class=\"layout keywords\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"col1\" colspan=\"3\">\n"
-            << "      <h1>Keywords" << " (" << n_uniq << ")</h1>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th id=\"col1\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "    <th id=\"col2\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "    <th id=\"col3\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "  </tr>\n";
+  sout << "<table class=\"layout keywords\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\" colspan=\"3\">\n"
+          "      <h1>Keywords"
+       << " (" << n_uniq
+       << ")</h1>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th id=\"col1\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "    <th id=\"col2\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "    <th id=\"col3\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "  </tr>\n";
 
   unsigned long n_per_col = 0, col_per_row = 0;
 
@@ -2348,33 +2898,44 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
 
   std::string Keyword;
   for (unsigned i = 0; i < n_per_col; i++) {
-    std::cout << "  <tr>\n";
+    sout << "  <tr>\n";
     for (unsigned j = 0; j < 3; j++) {
       Keyword = "&nbsp;";
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Keyword = Coders::LaTeXDecode(uniq[offset]);
+          Keyword = Coders::LaTeXDecode(uniq.at(offset));
           Keyword = "<a href=\"" + http.self +
-                    "?action=search&amp;match=" + Coders::URLEncode(Keyword) +
-                    "&amp;scheme=keywords\">" + Keyword + "</a>";
+                    "?action=search&match=" + Coders::URLEncode(Keyword) +
+                    "&scheme=keywords\">" + Keyword + "</a>";
         }
       }
-      std::cout << "    <td>\n"
-                << "      " << Keyword << "\n"
-                << "    </td>\n";
+      sout << "    <td>\n"
+           << "      " << Keyword << "\n"
+           << "    </td>\n";
     }
-    std::cout << "  </tr>\n";
+    sout << "  </tr>\n";
   }
-  std::cout << "</table>\n";
+  sout << "</table>\n";
 }
 
 void DisplayAuthors(HTTP &http, Preferences &prefs) {
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
+  }
+
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     return;
   }
 
@@ -2382,23 +2943,25 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
 
   size_t n_uniq = uniq.size();
 
-  std::cout << "<table class=\"layout authors\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"col1\" colspan=\"3\">\n"
-            << "      <h1>Authors" << " (" << n_uniq << ")</h1>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th id=\"col1\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "    <th id=\"col2\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "    <th id=\"col3\">\n"
-            << "      Keyword\n"
-            << "    </th>\n"
-            << "  </tr>\n";
+  sout << "<table class=\"layout authors\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\" colspan=\"3\">\n"
+          "      <h1>Authors"
+       << " (" << n_uniq
+       << ")</h1>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th id=\"col1\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "    <th id=\"col2\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "    <th id=\"col3\">\n"
+          "      Keyword\n"
+          "    </th>\n"
+          "  </tr>\n";
 
   unsigned long n_per_col = 0, col_per_row = 0;
 
@@ -2419,238 +2982,315 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
 
   std::string Author;
   for (unsigned i = 0; i < n_per_col; i++) {
-    std::cout << "  <tr>\n";
+    sout << "  <tr>\n";
     for (unsigned j = 0; j < 3; j++) {
       Author = "&nbsp;";
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Author = Coders::LaTeXDecode(uniq[offset]);
+          Author = Coders::LaTeXDecode(uniq.at(offset));
           Author = "<a href=\"" + http.self +
-                   "?action=search&amp;match=" + Coders::URLEncode(Author) +
-                   "&amp;scheme=author\">" + Author + "</a>";
+                   "?action=search&match=" + Coders::URLEncode(Author) +
+                   "&scheme=author\">" + Author + "</a>";
         }
       }
-      std::cout << "    <td>\n"
-                << "      " << Author << "\n"
-                << "    </td>\n";
+      sout << "    <td>\n"
+              "      "
+           << Author
+           << "\n"
+              "    </td>\n";
     }
-    std::cout << "  </tr>\n";
+    sout << "  </tr>\n";
   }
-  std::cout << "</table>\n";
+  sout << "</table>\n";
 }
 
 void DisplayDuplicatesForm(HTTP &http, Preferences &prefs) {
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
+  }
+
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     return;
   }
 
   auto duplicates = d.DuplicateRecordsForKey("biblcode");
 
-  std::cout << "<form name=\"entry\" action=\"" << http.self
-            << "?action=delete&amp;id=-1\" method=\"post\">\n"
-            << "<table class=\"layout duplicates\">\n"
-            << "  <tr>\n"
-            << "   <td colspan=\"10\">\n"
-            << "     <h1>Duplicates</h1>" << "   </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <td id=\"submenu\" colspan=\"10\">\n"
-            << "      <button id=\"delete\" title=\"Delete selected entries\" "
-               "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
-               "delete the selected "
-               "entries?'))document.entry.submit();\">Delete</button> <button "
-               "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th>\n"
-            << "      <span title=\"Toggle, hot-key Alt + T, Ctrl + T "
-               "(Apple)\"><input type=\"checkbox\" "
-               "onclick=\"javascript:Toggle();\" accesskey=\"t\" /></span> \n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Title/Booktitle\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Authors\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Journal\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Year\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Keyword(s)\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      Abstract\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      PDF\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      C\n"
-            << "    </th>\n"
-            << "    <th>\n"
-            << "      &nbsp;\n"
-            << "    </th>\n"
-            << "  </tr>\n";
+  sout << "<form name=\"record\" action=\"" << http.self
+       << "?action=delete&id=-1\" method=\"post\">\n"
+          "<table class=\"layout duplicates\">\n"
+          "  <tr>\n"
+          "   <td colspan=\"10\">\n"
+          "     <h1>Duplicates</h1>"
+       << "   </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <td id=\"submenu\" colspan=\"10\">\n"
+          "      <button id=\"delete\" title=\"Delete selected "
+          "records\" "
+          "type=\"button\" onclick=\"if(confirm('Are you sure you "
+          "want to "
+          "delete the selected "
+          "records?'))document.record.submit();\">Delete</button> "
+          "<button "
+          "id=\"reset\" title=\"Reset\" "
+          "type=\"reset\">Reset</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th>\n"
+          "      <span title=\"Toggle, hot-key Alt + T, Ctrl + T "
+          "(Apple)\"><input type=\"checkbox\" "
+          "onclick=\"javascript:Toggle();\" accesskey=\"t\" "
+          "/></span> \n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Title/Booktitle\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Authors\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Journal\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Year\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Keyword(s)\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      Abstract\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      PDF\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      C\n"
+          "    </th>\n"
+          "    <th>\n"
+          "      &nbsp;\n"
+          "    </th>\n"
+          "  </tr>\n";
 
-  Strings s(prefs.preferences.mFields["base"] +
-            prefs.preferences.mFields["abbreviation"]);
+  BibTeX::Strings strings(pool);
+  prefs_it = prefs["abbreviation"];
+  if (prefs_it != prefs_end) {
+    strings.Parse(base_path / prefs_it->second);
+  }
 
   for (auto &g : duplicates) {
     for (auto &r : g) {
-      DisplayData(http, prefs, r, s.strings);
+      DisplayData(http, prefs, r, strings.strings);
     }
-    std::cout << "  <tr>\n"
-              << "    <td class=\"divider\" colspan=\"10\">&nbsp;</td>\n"
-              << "  </tr>\n";
+    sout << "  <tr>\n"
+            "    <td class=\"divider\" colspan=\"10\">&nbsp;</td>\n"
+            "  </tr>\n";
   }
 
-  std::cout << "  <tr id=\"results\">\n"
-            << "    <td id=\"col1\" colspan=\"10\">\n"
-            << duplicates.size() << " duplicat"
-            << (duplicates.size() == 1 ? "e" : "es") << " found\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr id=\"submenu\">\n"
-            << "    <td colspan=\"10\">\n"
-            << "      <button id=\"delete\" title=\"Delete selected entries\" "
-               "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
-               "delete the selected "
-               "entries?'))document.entry.submit();\">Delete</button> <button "
-               "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n"
-            << "</form>\n"
-            << "<script type=\"text/javascript\">\n"
-            << "  var CheckValue = false;\n"
-            << "  var FormName   = 'entry';\n"
-            << "  var FieldName  = 'select';\n"
-            << "\n"
-            << "  function Toggle(){ \n"
-            << "    CheckValue = !CheckValue;\n"
-            << "    if(!document.forms[FormName])\n"
-            << "      return;\n"
-            << "    var objCheckBoxes = "
-               "document.forms[FormName].elements[FieldName];\n"
-            << "    if(!objCheckBoxes)\n"
-            << "      return;\n"
-            << "    var countCheckBoxes = objCheckBoxes.length;\n"
-            << "    if(!countCheckBoxes)\n"
-            << "     objCheckBoxes.checked = CheckValue;\n"
-            << "    else\n"
-            << "      for(var i = 0; i < countCheckBoxes; i++)\n"
-            << "        objCheckBoxes[i].checked = CheckValue;\n"
-            << "   }\n"
-            << "</script>\n";
+  sout << "  <tr id=\"results\">\n"
+          "    <td id=\"col1\" colspan=\"10\">\n"
+       << duplicates.size() << " duplicat"
+       << (duplicates.size() == 1 ? "e" : "es")
+       << " found\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr id=\"submenu\">\n"
+          "    <td colspan=\"10\">\n"
+          "      <button id=\"delete\" title=\"Delete selected "
+          "records\" "
+          "type=\"button\" onclick=\"if(confirm('Are you sure "
+          "you want to "
+          "delete the selected "
+          "records?'))document.record.submit();\">Delete</"
+          "button> <button "
+          "id=\"reset\" title=\"Reset\" "
+          "type=\"reset\">Reset</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n"
+          "</form>\n"
+          "<script type=\"text/javascript\">\n"
+          "  var CheckValue = false;\n"
+          "  var FormName   = 'record';\n"
+          "  var FieldName  = 'select';\n"
+          "\n"
+          "  function Toggle(){ \n"
+          "    CheckValue = !CheckValue;\n"
+          "    if(!document.forms[FormName])\n"
+          "      return;\n"
+          "    var objCheckBoxes = "
+          "document.forms[FormName].elements[FieldName];\n"
+          "    if(!objCheckBoxes)\n"
+          "      return;\n"
+          "    var countCheckBoxes = objCheckBoxes.length;\n"
+          "    if(!countCheckBoxes)\n"
+          "     objCheckBoxes.checked = CheckValue;\n"
+          "    else\n"
+          "      for(var i = 0; i < countCheckBoxes; i++)\n"
+          "        objCheckBoxes[i].checked = CheckValue;\n"
+          "   }\n"
+          "</script>\n";
 }
 
 void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
 
-  std::cout << "<table class=\"layout dois\">\n"
-            << "  <tr>\n"
-            << "    <td id=\"col1\" colspan=\"2\">\n"
-            << "      <h1>CrossRef DOIs</h1>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "  <tr>\n"
-            << "    <th id=\"id\">\n"
-            << "      id\n"
-            << "    </th>\n"
-            << "    <th id=\"doi\">\n"
-            << "      doi\n"
-            << "    </th>\n"
-            << "  </tr>\n";
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  sout << "<table class=\"layout dois\">\n"
+          "  <tr>\n"
+          "    <td id=\"col1\" colspan=\"2\">\n"
+          "      <h1>CrossRef DOIs</h1>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "  <tr>\n"
+          "    <th id=\"id\">\n"
+          "      id\n"
+          "    </th>\n"
+          "    <th id=\"doi\">\n"
+          "      doi\n"
+          "    </th>\n"
+          "  </tr>\n";
 
-  if (!d.good()) {
+  auto prefs_end = prefs.end();
+
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  float need_score =
-      strtof(prefs.preferences.mFields["doicrossrefscore"].c_str(), nullptr);
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
+    return;
+  }
 
-  for (auto &record : d.vRecords) {
+  float need_score;
+  prefs_it = prefs["doicrossrefscore"];
+  if (prefs_it != prefs_end) {
+    need_score = strtof(prefs_it->second.data(), nullptr);
+  }
 
-    std::string doi(record.mFields["doi"]);
+  std::string_view doilookupurl;
+  prefs_it = prefs["doilookupurl"];
+  if (prefs_it != prefs_end) {
+    doilookupurl = prefs_it->second;
+  }
 
-    if (!doi.empty()) {
+  std::string_view pem;
+  prefs_it = prefs["pem"];
+  if (prefs_it != prefs_end) {
+    pem = prefs_it->second;
+  }
+
+  std::string doi;
+  for (auto &record_it : d.vRecords) {
+
+    auto record_end = record_it.end();
+
+    auto field_it = record_it["doi"];
+    if (field_it != record_end) {
       continue;
     }
 
-    std::string id_str(record.mFields.at("id")),
-        crossref_str(record.mFields["doicrossrefstatus"]);
+    std::string_view id_str;
+    field_it = record_it["id"];
+    if (field_it != record_end) {
+      id_str = field_it->second;
+    }
 
-    if (!crossref_str.empty()) {
-      std::cout << "  <tr>\n"
-                << "    <td>\n"
-                << "      <a href=\"" << http.self
-                << "?action=open&amp;id=" << id_str << "\">" << id_str << "</a>"
-                << "\n"
-                << "    </td>\n"
-                << "    <td>\n"
-                << crossref_str << "\n"
-                << "    </td>\n"
-                << "  </tr>\n";
+    field_it = record_it["doicrossrefstatus"];
+    if (field_it != record_end) {
+      sout << "  <tr>\n"
+              "    <td>\n"
+              "      <a href=\""
+           << http.self << "?action=open&id=" << id_str << "\">" << id_str
+           << "</a>"
+              "\n"
+              "    </td>\n"
+              "    <td>\n"
+           << field_it->second
+           << "\n"
+              "    </td>\n"
+              "  </tr>\n";
       continue;
     }
 
-    std::string author(Coders::LaTeXDecode(record.mFields["author"]));
-
-    std::string::size_type pos = author.find(", ");
-    if (pos != std::string::npos) {
-      author = author.substr(0, pos);
+    std::string_view author;
+    field_it = record_it["author"];
+    if (field_it != record_end) {
+      author = Coders::LaTeXDecode(field_it->second);
+      std::string::size_type pos = author.find(", ");
+      if (pos != std::string::npos) {
+        author = author.substr(0, pos);
+      }
     }
-    std::string url(
-        prefs.preferences.mFields["doilookupurl"] +
-        "/v1/works?rows=1&sort=score&order=desc" +
-        "&query.bibliographic=" + Coders::URLEncode(record.mFields["title"]) +
-        "&query.author=" + Coders::URLEncode(author) +
-        "&filter=from-pub-date:" + record.mFields["year"] + ",until-pub-date:" +
-        record.mFields["year"] + "&select=DOI,score" + "&mailto=" CONTACT);
+    std::string url(doilookupurl);
+    url += "/v1/"
+           "works?rows=1&sort=score&order=desc&query.bibliographic=";
+    field_it = record_it["title"];
+    if (field_it != record_end) {
+      url += Coders::URLEncode(field_it->second);
+    }
+    url += "&query.author=";
+    url = url.append(author) + "&filter=from-pub-date:";
+    field_it = record_it["year"];
+    if (field_it != record_end) {
+      url.append(field_it->second);
+    }
+    url += ",until-pub-date:";
+    if (field_it != record_end) {
+      url.append(field_it->second);
+    }
+    url += "&select=DOI,score&mailto=" CONTACT;
 
-    std::string crossref(
-        http.SecureGet(url, {}, 443, prefs.preferences.mFields["pem"].c_str()));
+    std::string crossref(http.SecureGet(url, {}, 443, pem));
 
-    std::cout << "  <tr>\n"
-              << "    <td>\n"
-              << "      <a href=\"" << http.self
-              << "?action=open&amp;id=" << id_str << "\">" << id_str << "</a>"
-              << "\n"
-              << "    </td>\n"
-              << "    <td>\n";
+    sout << "  <tr>\n"
+            "    <td>\n"
+            "      <a href=\""
+         << http.self << "?action=open&id=" << id_str << "\">" << id_str
+         << "</a>"
+            "\n"
+            "    </td>\n"
+            "    <td>\n";
 
     rapidjson::Document json;
     if (json.Parse(crossref.c_str()).HasParseError()) {
-      std::string value("JSON parse error (");
-      value.append(GetParseError_En(json.GetParseError()));
-      value.append(")");
-
-      record.mFields["doicrossrefstatus"] = value;
-      std::cout << value << "\n"
-                << "    </td>\n"
-                << "  </tr>\n";
+      pool.begin();
+      pool << "JSON parse error (" << GetParseError_En(json.GetParseError())
+           << ')';
+      record_it.mFields["doicrossrefstatus"] = pool.sv();
+      sout << record_it["doicrossrefstatus"]->second
+           << "\n"
+              "    </td>\n"
+              "  </tr>\n";
       continue;
     }
 
     if (!json.HasMember("message") || !json["message"].IsObject() ||
         !json["message"].HasMember("total-results") ||
         json["message"]["total-results"].GetInt() == 0) {
-      record.mFields["doicrossrefstatus"] =
+      record_it.mFields["doicrossrefstatus"] =
           "no matching crossref found (no results)";
-      std::cout << record.mFields["doicrossrefstatus"] << "\n"
-                << "    </td>\n"
-                << "  </tr>\n";
+      sout << record_it["doicrossrefstatus"]->second
+           << "\n"
+              "    </td>\n"
+              "  </tr>\n";
       continue;
     }
 
@@ -2660,11 +3300,12 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
         !json["message"]["items"][0].HasMember("DOI") ||
         json["message"]["items"][0]["DOI"].GetStringLength() == 0 ||
         !json["message"]["items"][0].HasMember("score")) {
-      record.mFields["doicrossrefstatus"] =
+      record_it.mFields["doicrossrefstatus"] =
           "no matching crossref found (malformed message)";
-      std::cout << record.mFields["doicrossrefstatus"] << "\n"
-                << "    </td>\n"
-                << "  </tr>\n";
+      sout << record_it["doicrossrefstatus"]->second
+           << "\n"
+              "    </td>\n"
+              "  </tr>\n";
       continue;
     }
 
@@ -2672,42 +3313,61 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
 
     float score = json["message"]["items"][0]["score"].GetFloat();
     if (score < need_score) {
-      std::string value("score too low [");
-      value = value.append(doi) + "] (" + std::to_string(score) + '<' +
-              std::to_string(need_score) + ')';
-      record.mFields["doicrossrefstatus"] = value;
-      std::cout << record.mFields["doicrossrefstatus"] << '\n'
-                << "    </td>\n"
-                << "  </tr>\n";
+      pool.begin();
+      pool.setf(std::ios::fixed);
+      pool.precision(1);
+      pool << "score too low [" << doi << "] (" << score << '<' << need_score
+           << ')';
+      record_it.mFields["doicrossrefstatus"] = pool.sv();
+      sout << record_it["doicrossrefstatus"]->second
+           << "\n"
+              "    </td>\n"
+              "  </tr>\n";
       continue;
     }
+    pool.begin();
+    pool << '{' << doi << '}';
+    record_it.mFields["doi"] = pool.sv();
 
-    record.mFields["doi"] = std::string("{") + doi + "}";
-
-    std::cout << doi << "\n"
-              << "    </td>\n"
-              << "  </tr>\n";
+    sout.setf(std::ios::fixed);
+    sout.precision(1);
+    sout << doi << " (score: " << score << ")"
+         << "\n"
+            "    </td>\n"
+            "  </tr>\n";
   }
-  std::cout << "</table>\n";
+  sout << "</table>\n";
 
   d.Commit();
 }
 
 void Delete(HTTP &http, Preferences &prefs) {
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
     return;
   }
 
-  auto helper = [&d, &prefs](std::string id_str) {
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
+    return;
+  }
+
+  auto helper = [&d, &base_path](std::string_view id_str) {
     if (!d.RemoveRecord(id_str)) {
       return false;
     }
-    std::filesystem::path TargetPath(prefs.preferences.mFields["base"] +
-                                     "archive/" + id_str + ".pdf");
+
+    std::filesystem::path TargetPath(base_path / "archive" / id_str);
+    TargetPath.replace_extension("pdf");
 
     if (std::filesystem::exists(TargetPath)) {
       std::filesystem::remove(TargetPath);
@@ -2715,18 +3375,20 @@ void Delete(HTTP &http, Preferences &prefs) {
     return (true);
   };
 
-  std::string id_str(http.get.mFields.at("id"));
+  std::string_view id_str = http.get["id"]->second;
   if (id_str != "-1") {
     if (!helper(id_str)) {
       return;
     }
   } else {
-    std::vector<std::string> vIdentifiers =
-        split_on_comma(http.post.mFields["select"]);
+    auto post_it = http.post["select"];
+    if (post_it != http.post.end()) {
+      std::vector<std::string> vIdentifiers = split_on_comma(post_it->second);
 
-    for (const auto &id_str : vIdentifiers) {
-      if (!helper(id_str)) {
-        return;
+      for (const auto &id_str : vIdentifiers) {
+        if (!helper(id_str)) {
+          return;
+        }
       }
     }
   }
@@ -2738,19 +3400,30 @@ void Delete(HTTP &http, Preferences &prefs) {
 
 void Import(HTTP &http, Preferences &prefs) {
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  auto prefs_end = prefs.end();
 
-  if (!d.good()) {
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
+
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
+  }
+
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     return;
   }
 
   size_t size = 0;
 
-  auto record = BibTeX::Parse(http.file_data, size);
+  auto record = BibTeX::Parse(http.file_data, size, pool);
   while (record.mFields.size()) {
     d.SetRecord(record);
-    record = BibTeX::Parse(http.file_data, size);
+    record = BibTeX::Parse(http.file_data, size, pool);
   }
 
   d.Commit();
@@ -2760,64 +3433,86 @@ void Import(HTTP &http, Preferences &prefs) {
 
 void Export(HTTP &http, Preferences &prefs) {
 
-  std::string format(http.get.mFields["action"]);
-  format = format.substr(6);
+  auto get_it = http.get["action"];
+  if (get_it == http.get.end()) {
+    return;
+  }
 
-  std::cout << "<table class=\"layout export\">\n"
-            << "<tr>\n"
-            << "  <td>\n"
-            << "    <h1>Export</h1>\n"
-            << "    <h2>" << format << "</h2> \n"
-            << "  </td>\n"
-            << "  <td id=\"submenu\">\n"
-            << "    <button id=\"download\" title=\"Download File\" "
-               "type=\"button\" onclick=\"gotoURL('";
+  std::string format(get_it->second.substr(6));
+
+  sout << "<table class=\"layout export\">\n"
+          "<tr>\n"
+          "  <td>\n"
+          "    <h1>Export</h1>\n"
+          "    <h2>"
+       << format
+       << "</h2> \n"
+          "  </td>\n"
+          "  <td id=\"submenu\">\n"
+          "    <button id=\"download\" title=\"Download File\" "
+          "type=\"button\" onclick=\"gotoURL('";
 
   for (char &c : format) {
     c = tolower(c);
   }
 
-  std::cout << prefs.preferences.mFields["baseurl"]
-            << prefs.preferences.mFields[format]
-            << "')\">Download File</button>\n"
-            << "  </td>\n"
-            << "</tr>\n";
+  auto prefs_end = prefs.end();
 
-  std::filesystem::path filename(prefs.preferences.mFields["base"] +
-                                 prefs.preferences.mFields[format]);
+  std::filesystem::path base_path;
+  auto prefs_it = prefs["base"];
+  if (prefs_it != prefs_end) {
+    base_path = prefs_it->second;
+  }
 
-  std::ofstream ofstr(filename);
+  std::filesystem::path file;
+  prefs_it = prefs[format];
+  if (prefs_it != prefs_end) {
+    file = prefs_it->second;
+  }
+
+  sout << base_path.string() << file.string()
+       << "')\">Download File</button>\n"
+          "  </td>\n"
+          "</tr>\n";
+
+  std::ofstream ofstr(base_path / file);
   if (ofstr.fail()) {
     return;
   }
 
-  Database d(prefs.preferences.mFields["base"] +
-             prefs.preferences.mFields["data"]);
+  prefs_it = prefs["data"];
+  if (prefs_it == prefs_end) {
+    return;
+  }
 
-  if (!d.good()) {
+  Database d(base_path / prefs_it->second, pool);
+  if (!d.Good()) {
     ofstr.close();
     return;
   }
 
-  Strings s(prefs.preferences.mFields["base"] +
-            prefs.preferences.mFields["abbreviation"]);
+  prefs_it = prefs["abbreviation"];
+  BibTeX::Strings strings(pool);
+  if (prefs_it != prefs_end) {
+    strings.Parse(base_path / prefs_it->second);
+  }
 
   int n_export = 0;
 
-  std::string id_str(http.get.mFields.at("id"));
+  std::string_view id_str = http.get["id"]->second;
   if (id_str != "-1") {
     if (format == "bibtex") {
-      BibTeX::Setup setup = {prefs.preferences, s.strings};
+      BibTeX::Setup setup = {prefs.preferences, strings.strings};
       d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
       ++n_export;
     } else if (format == "msword") {
       MSWord::Header(ofstr);
-      MSWord::Setup setup = {prefs.preferences, s.strings};
+      MSWord::Setup setup = {prefs.preferences, strings.strings};
       d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
       MSWord::Footer(ofstr);
       ++n_export;
     } else if (format == "text") {
-      Text::Setup setup = {prefs.preferences, s.strings};
+      Text::Setup setup = {prefs.preferences, strings.strings};
       d.ExportRecord(id_str, ofstr, setup, Text::Export);
       ++n_export;
     } else {
@@ -2827,45 +3522,46 @@ void Export(HTTP &http, Preferences &prefs) {
     if (format == "msword") {
       MSWord::Header(ofstr);
     }
-    std::vector<std::string> vIdentifiers =
-        split_on_comma(http.post.mFields["select"]);
-    for (const auto &id_str : vIdentifiers) {
-      if (format == "bibtex") {
-        BibTeX::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
-        ++n_export;
-      } else if (format == "msword") {
-        MSWord::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
-        ++n_export;
-      } else if (format == "text") {
-        Text::Setup setup = {prefs.preferences, s.strings};
-        d.ExportRecord(id_str, ofstr, setup, Text::Export);
-        ++n_export;
-      } else {
-        return;
+    auto post_it = http.post["select"];
+    if (post_it != http.post.end()) {
+      std::vector<std::string> vIdentifiers = split_on_comma(post_it->second);
+      for (const auto &id_str : vIdentifiers) {
+        if (format == "bibtex") {
+          BibTeX::Setup setup = {prefs.preferences, strings.strings};
+          d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
+          ++n_export;
+        } else if (format == "msword") {
+          MSWord::Setup setup = {prefs.preferences, strings.strings};
+          d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
+          ++n_export;
+        } else if (format == "text") {
+          Text::Setup setup = {prefs.preferences, strings.strings};
+          d.ExportRecord(id_str, ofstr, setup, Text::Export);
+          ++n_export;
+        } else {
+          break;
+        }
       }
-    }
-    if (format == "msword") {
-      MSWord::Footer(ofstr);
+      if (format == "msword") {
+        MSWord::Footer(ofstr);
+      }
     }
   }
 
   ofstr.close();
 
-  std::cout << "  <tr>\n"
-            << "    <td>\n"
-            << "      Exported " << n_export << " record(s) to `"
-            << prefs.preferences.mFields["base"]
-            << prefs.preferences.mFields[format] << "'\n"
-            << "    </td>\n"
-            << "    <td id=\"submenu\">\n"
-            << "      <button id=\"download\" title=\"Download File\" "
-               "type=\"button\" onclick=\"gotoURL('"
-            << prefs.preferences.mFields["baseurl"]
-            << prefs.preferences.mFields[format]
-            << "')\">Download File</button>\n"
-            << "    </td>\n"
-            << "  </tr>\n"
-            << "</table>\n";
+  sout << "  <tr>\n"
+          "    <td>\n"
+          "      Exported "
+       << n_export << " record(s) to `" << base_path.string() << file.string()
+       << "'\n"
+          "    </td>\n"
+          "    <td id=\"submenu\">\n"
+          "      <button id=\"download\" title=\"Download File\" "
+          "type=\"button\" onclick=\"gotoURL('"
+       << base_path.string() << file.string()
+       << "')\">Download File</button>\n"
+          "    </td>\n"
+          "  </tr>\n"
+          "</table>\n";
 }

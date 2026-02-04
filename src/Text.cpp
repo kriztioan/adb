@@ -10,14 +10,25 @@
 #include "Text.h"
 
 bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
+  auto field_end = record.end();
 
-  // get type
-  std::string type(record.mFields["type"]);
+  std::string_view type;
+  auto field_it = record["type"];
+  if (field_it != field_end) {
+    type = field_it->second;
+  }
 
-  std::string authors(Coders::LaTeXDecode(record.mFields["author"])), author;
+  std::string authors;
+  field_it = record["author"];
+  if (field_it != field_end) {
+    authors = Coders::LaTeXDecode(field_it->second);
+  }
 
   std::string::size_type begin = 0, end;
 
+  bool had_first = false;
+
+  std::string author;
   while ((end = authors.find(" and ", begin)) != std::string::npos) {
     author = authors.substr(begin, end - begin);
     begin = end + 5;
@@ -39,10 +50,30 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
         if (idx != author.length())
           middle = author.substr(idx + 1);
       }
-    } else
+    } else {
       last = author;
+    }
 
-    ostr << last << ", " << first << middle << ", ";
+    if (!last.empty()) {
+      if (had_first) {
+        ostr << ", ";
+      } else {
+        had_first = true;
+      }
+      ostr << last;
+    }
+
+    if (!first.empty()) {
+      if (!last.empty() || had_first) {
+        ostr << ", ";
+      } else {
+        had_first = true;
+      }
+      ostr << first;
+      if (!middle.empty()) {
+        ostr << middle;
+      }
+    }
   }
 
   if (!authors.empty()) {
@@ -66,54 +97,93 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
         if (idx != author.length())
           middle = author.substr(idx + 1);
       }
-    } else
+    } else {
       last = author;
+    }
 
-    ostr << last << ", " << first << middle << ", ";
+    if (!last.empty()) {
+      if (had_first) {
+        ostr << ", ";
+      } else {
+        had_first = true;
+      }
+      ostr << last;
+    }
+
+    if (!first.empty()) {
+      if (!last.empty() || had_first) {
+        ostr << ", ";
+      } else {
+        had_first = true;
+      }
+      ostr << first;
+      if (!middle.empty()) {
+        ostr << middle;
+      }
+    }
   }
 
-  ostr << '\"' << Coders::LaTeXDecode(record.mFields["title"]) << "\", "
-       << Coders::LaTeXDecode(record.mFields["year"]) << ", ";
+  field_it = record["title"];
+  if (field_it != field_end) {
+    ostr << ", \"" << Coders::LaTeXDecode(field_it->second) << "\"";
+  }
 
+  std::string journal;
   if (type == "ARTICLE") {
-
-    std::string journal(Coders::LaTeXDecode(record.mFields["journal"]));
-    if (type == "PHDTHESIS")
-      journal = "PhD Thesis";
-
-    if (type == "ARTICLE" && setup.prefs.mFields["translate"] == "true") {
-
-      if (setup.strings.mFields.size()) {
-        auto it = setup.strings.mFields.find(journal);
-        if (it != setup.strings.mFields.end()) {
-          journal = it->second;
+    field_it = record["journal"];
+    if (field_it != field_end) {
+      journal = Coders::LaTeXDecode(field_it->second);
+      auto prefs_it = setup.prefs["translate"];
+      if (prefs_it != setup.prefs.end() && prefs_it->second == "true") {
+        if (setup.strings.mFields.size()) {
+          auto strings_it = setup.strings[journal];
+          if (strings_it != setup.strings.end()) {
+            journal = strings_it->second;
+          }
         }
       }
     }
-    ostr << journal << ", ";
+  } else if (type == "PHDTHESIS") {
+    journal = "PhD Thesis";
+  }
+
+  if (!journal.empty()) {
+    ostr << ", " << journal;
   }
 
   if (type == "INPROCEEDINGS") {
-    std::string booktitle(record.mFields["booktit]e"]),
-        series(record.mFields["series"]);
+    field_it = record["booktitle"];
+    if (field_it != field_end) {
+      ostr << " in \"" << Coders::LaTeXDecode(field_it->second) << "\"";
+    }
 
-    if (!booktitle.empty())
-      ostr << "in proceedings \"" << Coders::LaTeXDecode(booktitle) << "\", ";
+    field_it = record["series"];
+    if (field_it != field_end) {
+      ostr << ", " << Coders::LaTeXDecode(field_it->second);
+    }
+  }
 
-    if (!series.empty())
-      ostr << Coders::LaTeXDecode(series);
+  field_it = record["year"];
+  if (field_it != field_end) {
+    ostr << ", " << Coders::LaTeXDecode(record.mFields["year"]);
   }
 
   if (type == "BOOK" || type == "INPROCEEDINGS") {
-    std::string publisher(record.mFields["publish"]);
-    if (!publisher.empty())
-      ostr << Coders::LaTeXDecode(publisher) << "\n";
+    field_it = record["publisher"];
+    if (field_it != field_end) {
+      ostr << ", " << Coders::LaTeXDecode(field_it->second) << "\n";
+    }
   }
 
-  std::string editors(Coders::LaTeXDecode(record.mFields["editor"])), editor;
+  std::string editors;
+  field_it = record["editor"];
+  if (field_it != field_end) {
+    editors = Coders::LaTeXDecode(field_it->second);
+  }
 
-  if (editors.length() != 0) {
-
+  std::string editor;
+  if (!editors.empty()) {
+    had_first = false;
     begin = 0;
     while ((end = editors.find(" and ", begin)) != std::string::npos) {
       editor = editors.substr(begin, end - begin);
@@ -137,10 +207,30 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
           if (idx != editor.length())
             middle = editor.substr(idx + 1);
         }
-      } else
+      } else {
         last = editor;
+      }
 
-      ostr << last << ", " << first << middle << ", ";
+      if (!last.empty()) {
+        ostr << ", ";
+        if (!had_first) {
+          ostr << "eds. ";
+          had_first = true;
+        }
+        ostr << last;
+      }
+
+      if (!first.empty()) {
+        ostr << ", ";
+        if (!had_first) {
+          ostr << "eds. ";
+          had_first = true;
+        }
+        ostr << first;
+        if (!middle.empty()) {
+          ostr << middle;
+        }
+      }
     }
 
     if (!editors.empty()) {
@@ -164,25 +254,54 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
           if (idx != editor.length())
             middle = editor.substr(idx + 1);
         }
-      } else
+      } else {
         last = editor;
+      }
 
-      ostr << last << ", " << first << middle << ", ";
+      if (!last.empty()) {
+        ostr << ", ";
+        if (!had_first) {
+          ostr << "eds. ";
+          had_first = true;
+        }
+        ostr << last;
+      }
+
+      if (!first.empty()) {
+        ostr << ", ";
+        if (!had_first) {
+          ostr << "eds. ";
+          had_first = true;
+        }
+        ostr << first;
+        if (!middle.empty()) {
+          ostr << middle;
+        }
+      }
     }
   }
 
-  std::string volume(record.mFields["volume"]), pages(record.mFields["pages"]);
+  field_it = record["volume"];
+  if (field_it != field_end) {
+    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+  }
 
-  if (!volume.empty())
-    ostr << Coders::LaTeXDecode(volume) << ", ";
+  field_it = record["number"];
+  if (field_it != field_end) {
+    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+  }
 
-  if (!pages.empty())
-    ostr << Coders::LaTeXDecode(pages);
+  field_it = record["pages"];
+  if (field_it != field_end) {
+    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+  }
 
-  std::string doi(record.mFields["doi"]);
-  if (!doi.empty())
-    ostr << " doi:" << Coders::LaTeXDecode(doi);
+  field_it = record["doi"];
+  if (field_it != field_end) {
+    ostr << " doi:" << Coders::LaTeXDecode(field_it->second);
+  }
 
   ostr << "\n\n";
+
   return (true);
 }

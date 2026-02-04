@@ -1,86 +1,90 @@
-body{
-  background: #4682b4;
-  color: #b0c4de;
-  font-family: Helvetica;
-  font-weight: bold;
-  font-size: 10pt;
-  margin: 0;
+body {
+    background: #4682b4;
+    color: #b0c4de;
+    font-family: Helvetica;
+    font-weight: bold;
+    font-size: 10pt;
+    margin: 0;
 }
 
-a{
-  color: #4682b4;
-  text-decoration: none;
-  background: #b0c4de;
-  border-style: none; 
+a {
+    color: #4682b4;
+    text-decoration: none;
+    background: #b0c4de;
+    border-style: none;
 }
 
-a.title{
-  font-weight: bold;
+a.title {
+    font-weight: bold;
 }
 
-table{
-  width: 1000px;
-  border: 2px solid #b0c4de;
+table {
+    width: 1000px;
+    border: 2px solid #b0c4de;
 }
 
-table.menu{
-  padding: 10px 3px;
+table.menu {
+    padding: 10px 3px;
 }
 
-table.layout{
-  padding: 3px;
+table.layout {
+    padding: 3px;
 }
 
-.highlight{
-  background-color: yellow;
+.highlight {
+    background-color: yellow;
 }
 
-input.config{
-  color: #b0c4de;
-  background-color: #4682b4;
-  border: 1px solid #b0c4de;
-  width: 13cm;
+input.config {
+    color: #b0c4de;
+    background-color: #4682b4;
+    border: 1px solid #b0c4de;
+    width: 13cm;
 }
 
-textarea.config{
-  color: #b0c4de;
-  background-color : #4682b4;
-  border: 1px solid #b0c4de;
-  width : 13cm;
-  min-height: 4em;
+textarea.config {
+    color: #b0c4de;
+    background-color: #4682b4;
+    border: 1px solid #b0c4de;
+    width: 13cm;
+    min-height: 4em;
 }
 
-.select{
-  background-color: #4682b4;
-  color: #b0c4de;
-  border: 1px solid #b0c4de;
+.select {
+    background-color: #4682b4;
+    color: #b0c4de;
+    border: 1px solid #b0c4de;
 }
 
-.search{
-  width: 6cm;
-  border: 1px solid #b0c4de;
-  background-color: #4682b4;
-  color: #b0c4de;
+.search {
+    width: 6cm;
+    border: 1px solid #b0c4de;
+    background-color: #4682b4;
+    color: #b0c4de;
 }
 
-input.file{
-  color: #b0c4de;
-  background-color: #4682b4;
-  border: 1px solid #b0c4de;
+input.file {
+    color: #b0c4de;
+    background-color: #4682b4;
+    border: 1px solid #b0c4de;
 }
 
-button{
-  border-style: none;
-  color: #4682b4;
-  background: #b0c4de;
-  cursor: pointer;
+button {
+    border-style: none;
+    color: #4682b4;
+    background: #b0c4de;
+    cursor: pointer;
 }
 
-div.autocomplete{
-  visibility:hidden;
-  width:10cm;
-  border:solid 1px #b0c4de;
-  background: #4682b4;
-  position:absolute;
-  overflow:hidden;
+div.autocomplete {
+    visibility: hidden;
+    width: 10cm;
+    border: solid 1px #b0c4de;
+    background: #4682b4;
+    position: absolute;
+    overflow: hidden;
+}
+
+button {
+    cursor: pointer;
 }

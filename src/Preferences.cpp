@@ -9,32 +9,35 @@
 
 #include "Preferences.h"
 
-Preferences::Preferences(const std::filesystem::path &f, char *defaults)
+Preferences::Preferences(const std::filesystem::path &f,
+                         std::string_view defaults)
     : filename(f) {
 
   state = false;
 
-  char *p;
+  if (!std::filesystem::is_regular_file(f)) {
+    return;
+  }
 
-  struct stat f_stat;
+  size = std::filesystem::file_size(f);
+
+  char *p;
 
   int fd = open(filename.c_str(), O_RDONLY | O_SHLOCK);
 
   if (fd == -1) {
-    if (!defaults) {
+    if (!defaults.data()) {
       return;
     }
-    p = defaults;
+    p = const_cast<char *>(defaults.data());
   } else {
-    if (fstat(fd, &f_stat) == -1 || (f_stat.st_mode & S_IFDIR)) {
+    data = p =
+        (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+    if (data == MAP_FAILED) {
       close(fd);
       return;
     }
-
-    size = f_stat.st_size;
-
-    data = p =
-        (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
   }
 
   char *key, *value;
@@ -104,7 +107,7 @@ bool Preferences::Save() {
               "#\n\n");
 
   for (auto &f : preferences.mFields) {
-    dprintf(fd, "$%s = \"%s\"\n", f.first.c_str(), f.second.c_str());
+    dprintf(fd, "$%s = \"%s\"\n", f.first.data(), f.second.data());
   }
 
   close(fd);

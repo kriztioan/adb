@@ -10,34 +10,34 @@
 #ifndef ACTIONS_H
 #define ACTIONS_H
 
-#include "HTTP.h"
-#include "Preferences.h"
-
 #include "BibTeX.h"
 #include "Database.h"
-#include "MSWord.h"
-#include "Text.h"
-
 #include "HTML.h"
+#include "HTTP.h"
 #include "Javascript.h"
-
+#include "MSWord.h"
+#include "Pool.h"
+#include "Preferences.h"
+#include "Record.h"
 #include "Strings.h"
+#include "Text.h"
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <chrono>
-#include <iostream>
-
 #include <cmath>
+#include <iostream>
 
 #include "config.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
-std::string list_themes(const std::string &directory);
+std::string list_themes(std::filesystem::path &directory);
 
 void WriteHTMLHeader(Preferences &prefs);
+void WriteOutput();
 
 void DisplayToolsForm(HTTP &http, [[maybe_unused]] Preferences &prefs);
 void DisplayData(HTTP &http, Preferences &prefs, Record &record,
@@ -46,10 +46,10 @@ void DisplayDataList(HTTP &http, Preferences &prefs);
 void WriteHTMLFooter();
 void DisplayMenu(HTTP &http, Preferences &prefs);
 void DisplayFooter(const std::chrono::steady_clock::time_point &t0);
-void DisplayEntry(HTTP &http, Preferences &prefs);
+void DisplayRecord(HTTP &http, Preferences &prefs);
 std::vector<std::string> split_on_and(std::string str);
 
-void DisplayEntryForm(HTTP &http, Preferences &prefs);
+void DisplayRecordForm(HTTP &http, Preferences &prefs);
 
 void Update(HTTP &http, Preferences &prefs);
 
@@ -80,7 +80,7 @@ static constexpr const std::array<std::pair<std::string_view, act>, 22> actions{
      {"delete", Delete},
      {"doicrossref", DisplayDOICrossrefForm},
      {"duplicates", DisplayDuplicatesForm},
-     {"edit", DisplayEntryForm},
+     {"edit", DisplayRecordForm},
      {"exportBibTeX", Export},
      {"exportMSWord", Export},
      {"exportText", Export},
@@ -89,7 +89,7 @@ static constexpr const std::array<std::pair<std::string_view, act>, 22> actions{
      {"info", DisplayInfo},
      {"keywords", DisplayKeywords},
      {"list", DisplayDataList},
-     {"open", DisplayEntry},
+     {"open", DisplayRecord},
      {"queryADS", QueryADS},
      {"queryDOI", QueryDOI},
      {"reindex", DisplayReindexForm},

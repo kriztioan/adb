@@ -10,18 +10,26 @@
 #ifndef STRINGS_H
 #define STRINGS_H
 
+#include "Pool.h"
 #include "Record.h"
+
 #include <fcntl.h>
 #include <filesystem>
+#include <string>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
+
+namespace BibTeX {
 
 class Strings {
 
 public:
-  Strings(const std::filesystem::path &f);
+  Strings() = delete;
+  Strings(Pool &pool);
+  Strings(const std::filesystem::path &f, Pool &pool);
   ~Strings();
+
+  int Parse(const std::filesystem::path &f);
 
   bool good();
 
@@ -29,9 +37,12 @@ public:
 
 private:
   std::filesystem::path filename;
+  Pool &pool;
+  off_t size;
   bool state;
   char *data = nullptr;
-  off_t size;
 };
+
+} // namespace BibTeX
 
 #endif // end of STRINGS_H
