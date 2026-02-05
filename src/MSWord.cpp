@@ -59,7 +59,6 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
           "<b:Title>";
   field_it = record["title"];
   if (field_it != field_end) {
-
     ostr << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
   }
   ostr << "</b:Title>\n";
@@ -68,6 +67,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
     ostr << "<b:Year>" << Coders::LaTeXDecode(field_it->second);
   }
   ostr << "</b:Year>\n"
+          "<b:Author>\n"
           "<b:Author>\n"
           "<b:NameList>\n";
 
@@ -270,7 +270,9 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
     ostr << "</b:NameList>\n"
             "</b:Editor>\n";
   }
-  ostr << "<b:Pages>" << Coders::LaTeXDecode(record.mFields["pages"])
+  ostr << "</b:Author>\n"
+          "<b:Pages>"
+       << Coders::LaTeXDecode(record.mFields["pages"])
        << "</b:Pages>\n"
           "<b:Volume>"
        << Coders::LaTeXDecode(record.mFields["volume"]) << "</b:Volume>\n";
