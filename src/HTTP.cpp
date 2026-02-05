@@ -30,69 +30,66 @@ HTTP::HTTP() {
   if (getenv("CONTENT_TYPE")) {
     std::string_view content_type(getenv("CONTENT_TYPE"));
     if (getenv("CONTENT_LENGTH")) {
-      char *endptr;
-      size_t content_length = strtol(getenv("CONTENT_LENGTH"), &endptr, 10);
-      if ('\0' == *endptr) {
-        if (content_length > 0) {
-          data.assign(std::istreambuf_iterator<char>(std::cin),
-                      std::istreambuf_iterator<char>());
-          std::string_view d, sv = data;
-          std::string::size_type start = 0, end = std::string::npos;
-          if ((end = content_type.find("multipart/form-data", start)) !=
+      std::string_view content_length(getenv("CONTENT_LENGTH"));
+      size_t content_length_val;
+      auto [ptr, ec] = std::from_chars(
+          content_length.data(), content_length.data() + content_length.size(),
+          content_length_val);
+      if (ec == std::errc() && content_length_val > 0) {
+        data.assign(std::istreambuf_iterator<char>(std::cin),
+                    std::istreambuf_iterator<char>());
+        std::string_view d, sv = data;
+        std::string::size_type start = 0, end = std::string::npos;
+        if ((end = content_type.find("multipart/form-data", start)) !=
+            std::string::npos) {
+          if ((start = content_type.find("; boundary=", end)) !=
               std::string::npos) {
-            if ((start = content_type.find("; boundary=", end)) !=
-                std::string::npos) {
-              std::string_view boundary(content_type.substr(start + 11));
-              while ((start = sv.find(boundary, end)) != std::string::npos) {
-                start += boundary.length();
-                end = sv.find(boundary, start);
-                d = sv.substr(start, end - start - 3);
-                if (d == "--\r\n")
-                  break;
-                std::string::size_type s = d.find("Content-Disposition: "),
-                                       e = d.find(";", s);
-                if (s != std::string::npos && e != std::string::npos) {
-                  std::string_view disposition(d.substr(s + 21, e - s - 21));
-                  if (disposition == "form-data") {
-                    if ((s = d.find("name=\"", e)) != std::string::npos &&
-                        (e = d.find("\"", s + 6)) != std::string::npos) {
-                      if (d.find("filename=\"", e) != std::string::npos) {
-                        s = d.find("\r\n\r\n", e);
-                        file_data = d.substr(s + 4, d.length() - s - 5);
-                        continue;
-                      }
-                      std::string_view name(d.substr(s + 6, e - s - 6));
-                      if ((s = d.find("\r\n\r\n", e)) != std::string::npos) {
-                        std::string::size_type value_length =
-                            d.length() - s - 5;
-                        if (value_length) {
-                          post.mFields.emplace(name,
-                                               d.substr(s + 4, value_length));
-                        }
-                      }
-                    } else { // name
-                      state = false;
-                      return;
+            std::string_view boundary(content_type.substr(start + 11));
+            while ((start = sv.find(boundary, end)) != std::string::npos) {
+              start += boundary.length();
+              end = sv.find(boundary, start);
+              d = sv.substr(start, end - start - 3);
+              if (d == "--\r\n")
+                break;
+              std::string::size_type s = d.find("Content-Disposition: "),
+                                     e = d.find(";", s);
+              if (s != std::string::npos && e != std::string::npos) {
+                std::string_view disposition(d.substr(s + 21, e - s - 21));
+                if (disposition == "form-data") {
+                  if ((s = d.find("name=\"", e)) != std::string::npos &&
+                      (e = d.find("\"", s + 6)) != std::string::npos) {
+                    if (d.find("filename=\"", e) != std::string::npos) {
+                      s = d.find("\r\n\r\n", e);
+                      file_data = d.substr(s + 4, d.length() - s - 5);
+                      continue;
                     }
-                  } else { // form-data
+                    std::string_view name(d.substr(s + 6, e - s - 6));
+                    if ((s = d.find("\r\n\r\n", e)) != std::string::npos) {
+                      std::string::size_type value_length = d.length() - s - 5;
+                      if (value_length) {
+                        post.mFields.emplace(name,
+                                             d.substr(s + 4, value_length));
+                      }
+                    }
+                  } else { // name
                     state = false;
                     return;
                   }
-                } else // disposition
+                } else { // form-data
                   state = false;
-                start = end;
-              }
-            } else { // boundary
-              state = false;
-              return;
+                  return;
+                }
+              } else // disposition
+                state = false;
+              start = end;
             }
-          } else // multipart form-data
-            post.Parse(data.data());
-        } else { // read
-          state = false;
-          return;
-        }
-      } else { // strtol
+          } else { // boundary
+            state = false;
+            return;
+          }
+        } else // multipart form-data
+          post.Parse(data.data());
+      } else { // read
         state = false;
         return;
       }
@@ -110,16 +107,17 @@ void HTTP::WriteHeader(bool nocache) {
   std::cout << "Content-type: text/html; charset=utf-8\n";
   if (nocache) {
     std::cout << "Cache-Control: no-cache, no-store, must-revalidate\n"
-              << "Pragma: no-cache\n"
-              << "Expires: 0\n"
-              << "Connection: close\n";
+                 "Pragma: no-cache\n"
+                 "Expires: 0\n"
+                 "Connection: close\n";
   }
   std::cout << "\n";
 }
 
 void HTTP::WriteRedirect(std::string_view url) {
-  std::cout << "Location: " << url << "\n"
-            << "Connection: close\n\n";
+  std::cout << "Location: " << url
+            << "\n"
+               "Connection: close\n\n";
 }
 
 std::string HTTP::Get(std::string_view url,

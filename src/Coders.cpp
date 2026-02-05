@@ -23,7 +23,8 @@ char *Coders::URLDecodeInplace(char *str) {
       while (++p && i++ < 2) {
         *s++ = *p;
       }
-      *q++ = static_cast<char>(std::strtol(r, nullptr, 16));
+      std::from_chars(r, r + 2, i, 16);
+      *q++ = static_cast<char>(i);
     } else {
       *q++ = *p++;
     }

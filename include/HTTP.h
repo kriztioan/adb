@@ -11,11 +11,15 @@
 #define HTTP_H
 
 #include "Record.h"
+
+#include <charconv>
+#include <cstdlib>
 #include <iostream>
 #include <netdb.h>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include <fcntl.h>
