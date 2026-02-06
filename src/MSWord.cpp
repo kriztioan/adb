@@ -14,10 +14,15 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   static std::unordered_map<std::string, std::string> types;
 
   types["ARTICLE"] = "JournalArticle";
-  types["INPROCEEDINGS"] = "ConferenceProceedings";
   types["BOOK"] = "Book";
+  types["INBOOK"] = "BookSection";
+  types["INCOLLECTION"] = "Book";
+  types["INPROCEEDINGS"] = "ConferenceProceedings";
+  types["PHDTHESIS"] = "Report";
+  types["PROCEEDINGS"] = "ConferenceProceedings";
 
   auto field_end = record.end();
+
   std::string type;
   auto field_it = record["type"];
   if (field_it != field_end) {
@@ -28,48 +33,68 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
 
   if (types.find(type) != types.end()) {
     type = types[type];
+  } else {
+    type = "Misc";
   }
 
-  auto prefs_end = setup.prefs.end();
-  std::string tag;
-  auto prefs_it = setup.prefs["key"];
-  if (prefs_it != prefs_end) {
-    field_it = record[prefs_it->second];
-    if (field_it != field_end) {
-      tag = Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
+  static bool initialized = false, translate = false;
+
+  static std::string_view key;
+
+  if (!initialized) {
+    auto prefs_end = setup.prefs.end();
+
+    auto prefs_it = setup.prefs["key"];
+    if (prefs_it != prefs_end) {
+      key = prefs_it->second;
     }
+
+    if (setup.strings.mFields.size()) {
+      prefs_it = setup.prefs["translate"];
+      if (prefs_it != prefs_end && prefs_it->second == "true") {
+        translate = true;
+      }
+    }
+
+    initialized = true;
+  }
+
+  std::string tag;
+  field_it = record[key];
+  if (field_it != field_end) {
+    tag = Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
   }
 
   UUID uuid;
   Uuid::UUIDFromURL(&uuid, tag);
 
-  ostr << "<b:Source>\n"
-          "<b:SourceType>"
+  ostr << "\n<b:Source>"
+          "\n<b:SourceType>"
        << type
-       << "</b:SourceType>\n"
-          "<b:Guid>{"
+       << "</b:SourceType>"
+          "\n<b:Guid>{"
        << uuid.ms
-       << "}</b:Guid>\n"
-          "<b:LCID>"
+       << "}</b:Guid>"
+          "\n<b:LCID>"
        << 1033
-       << "</b:LCID>\n"
-          "<b:Tag>"
-       << tag
-       << "</b:Tag>\n"
-          "<b:Title>";
+       << "</b:LCID>"
+          "\n<b:Tag>"
+       << tag << "</b:Tag>";
+
   field_it = record["title"];
   if (field_it != field_end) {
-    ostr << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
+    ostr << "\n<b:Title>"
+         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << "</b:Title>";
   }
-  ostr << "</b:Title>\n";
   field_it = record["year"];
   if (field_it != field_end) {
-    ostr << "<b:Year>" << Coders::LaTeXDecode(field_it->second);
+    ostr << "\n<b:Year>" << Coders::LaTeXDecode(field_it->second)
+         << "</b:Year>";
   }
-  ostr << "</b:Year>\n"
-          "<b:Author>\n"
-          "<b:Author>\n"
-          "<b:NameList>\n";
+  ostr << "\n<b:Author>"
+          "\n<b:Author>"
+          "\n<b:NameList>";
 
   std::string authors;
   field_it = record["author"];
@@ -105,22 +130,17 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
       last = author;
     }
 
-    ostr << "<b:Person>\n"
-            "<b:Last>";
+    ostr << "\n<b:Person>";
     if (!last.empty()) {
-      ostr << last;
+      ostr << "\n<b:Last>" << last << "</b:Last>";
     }
-    ostr << "</b:Last>\n" << "<b:Middle>";
     if (!middle.empty()) {
-      ostr << middle;
+      ostr << "\n<b:Middle>" << middle << "</b:Middle>";
     }
-    ostr << "</b:Middle>\n"
-            "<b:First>";
     if (!first.empty()) {
-      ostr << first;
+      ostr << "\n<b:First>" << first << "</b:First>";
     }
-    ostr << "</b:First>\n"
-            "</b:Person>\n";
+    ostr << "\n</b:Person>";
   }
 
   if (!authors.empty()) {
@@ -148,26 +168,21 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
       last = author;
     }
 
-    ostr << "<b:Person>\n"
-            "<b:Last>";
+    ostr << "\n<b:Person>";
     if (!last.empty()) {
-      ostr << last;
+      ostr << "\n<b:Last>" << last << "</b:Last>";
     }
-    ostr << "</b:Last>\n" << "<b:Middle>";
     if (!middle.empty()) {
-      ostr << middle;
+      ostr << "\n<b:Middle>" << middle << "</b:Middle>";
     }
-    ostr << "</b:Middle>\n"
-            "<b:First>";
     if (!first.empty()) {
-      ostr << first;
+      ostr << "\n<b:First>" << first << "</b:First>";
     }
-    ostr << "</b:First>\n"
-            "</b:Person>\n";
+    ostr << "\n</b:Person>";
   }
 
-  ostr << "</b:NameList>\n"
-          "</b:Author>\n";
+  ostr << "\n</b:NameList>"
+          "\n</b:Author>";
 
   std::string editors;
   field_it = record["editor"];
@@ -176,8 +191,8 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   }
 
   if (editors.length() != 0) {
-    ostr << "<b:Editor>\n"
-            "<b:NameList>\n";
+    ostr << "\n<b:Editor>"
+            "\n<b:NameList>";
 
     begin = 0;
 
@@ -208,22 +223,17 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
         last = editor;
       }
 
-      ostr << "<b:Person>\n"
-              "<b:Last>";
+      ostr << "\n<b:Person>";
       if (!last.empty()) {
-        ostr << last;
+        ostr << "\n<b:Last>" << last << "</b:Last>";
       }
-      ostr << "</b:Last>\n" << "<b:Middle>";
       if (!middle.empty()) {
-        ostr << middle;
+        ostr << "\n<b:Middle>" << middle << "</b:Middle>\n";
       }
-      ostr << "</b:Middle>\n"
-           << "<b:First>";
       if (!first.empty()) {
-        ostr << first;
+        ostr << "\n<b:First>" << first << "</b:First>";
       }
-      ostr << "</b:First>\n"
-              "</b:Person>\n";
+      ostr << "\n</b:Person>";
     }
 
     if (!editors.empty()) {
@@ -250,103 +260,92 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
       } else {
         last = editor;
       }
-      ostr << "<b:Person>\n"
-              "<b:Last>";
+      ostr << "\n<b:Person>";
       if (!last.empty()) {
-        ostr << last;
+        ostr << "\n<b:Last>" << last << "</b:Last>";
       }
-      ostr << "</b:Last>\n" << "<b:Middle>";
       if (!middle.empty()) {
-        ostr << middle;
+        ostr << "\n<b:Middle>" << middle << "</b:Middle>";
       }
-      ostr << "</b:Middle>\n"
-              "<b:First>";
       if (!first.empty()) {
-        ostr << first;
+        ostr << "<b:First>" << first << "</b:First>";
       }
-      ostr << "</b:First>\n"
-              "</b:Person>\n";
+      ostr << "\n</b:Person>";
     }
-    ostr << "</b:NameList>\n"
-            "</b:Editor>\n";
+    ostr << "\n</b:NameList>"
+            "\n</b:Editor>";
   }
-  ostr << "</b:Author>\n"
-          "<b:Pages>"
-       << Coders::LaTeXDecode(record.mFields["pages"])
-       << "</b:Pages>\n"
-          "<b:Volume>"
-       << Coders::LaTeXDecode(record.mFields["volume"]) << "</b:Volume>\n";
+  ostr << "\n</b:Author>";
 
-  if (type == "ARTICLE") {
+  field_it = record["pages"];
+  if (field_it != field_end) {
+    ostr << "\n<b:Pages>" << Coders::LaTeXDecode(field_it->second)
+         << "</b:Pages>";
+  }
 
-    std::string journal;
+  field_it = record["volume"];
+  if (field_it != field_end) {
+    ostr << "\n<b:Volume>" << Coders::LaTeXDecode(field_it->second)
+         << "</b:Volume>";
+  }
+
+  if (type == "JournalArticle") {
+    std::string_view journal;
     field_it = record["journal"];
     if (field_it != field_end) {
-      journal = Coders::LaTeXDecode(field_it->second);
-    }
-
-    if (type == "PHDTHESIS") {
-      journal = "PhD Thesis";
-    }
-
-    prefs_it = setup.prefs["translate"];
-    if (type == "ARTICLE" && prefs_it != prefs_end &&
-        prefs_it->second == "true") {
-      if (setup.strings.mFields.size()) {
-        auto strings_it = setup.strings[journal];
+      if (translate) {
+        auto strings_it = setup.strings[field_it->second];
         if (strings_it != setup.strings.end()) {
           journal = strings_it->second;
         }
       }
+      ostr << "\n<b:JournalName>"
+           << Coders::HTML2XML(Coders::LaTeXDecode(journal))
+           << "</b:JournalName>";
     }
-
-    ostr << "<b:JournalName>" << Coders::HTML2XML(journal)
-         << "</b:JournalName>\n";
   }
 
-  if (type == "INPROCEEDINGS") {
-    ostr << "<b:BookTitle>";
-    field_it = record["booktitle"];
-    if (field_it != field_end) {
-      ostr << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
-    }
-    ostr << "</b:BookTitle>\n"
-            "<b:ConferenceName>";
-    field_it = record["series"];
-    if (field_it != field_end) {
-      ostr << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
-    }
-    ostr << "</b:ConferenceName>\n";
+  field_it = record["booktitle"];
+  if (field_it != field_end) {
+    ostr << "\n<b:BookTitle>"
+         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << "</b:BookTitle>";
   }
 
-  if (type == "BOOK") {
-    ostr << "<b:Publisher>";
-    field_it = record["publisher"];
-    if (field_it != field_end) {
-      ostr << Coders::LaTeXDecode(field_it->second);
-    }
-    ostr << "</b:Publisher>\n";
+  field_it = record["series"];
+  if (field_it != field_end) {
+    ostr << "\n<b:ConferenceName>"
+         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << "</b:ConferenceName>";
   }
 
-  ostr << "<b:Month>";
+  field_it = record["publisher"];
+  if (field_it != field_end) {
+    ostr << "\n<b:Publisher>"
+         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << "</b:Publisher>";
+  }
+
   field_it = record["month"];
   if (field_it != field_end) {
-    ostr << Coders::LaTeXDecode(field_it->second);
+    ostr << "\n<b:Month>" << Coders::LaTeXDecode(field_it->second)
+         << "</b:Month>";
   }
-  ostr << "</b:Month>\n"
-          "</b:Source>\n";
+
+  ostr << "\n</b:Source>";
 
   return (true);
 }
 
 void MSWord::Header(std::ostream &ostr) {
 
-  ostr << "<?xml version=\"1.0\"?>\n"
-          "<b:Sources SelectedStyle=\"\" "
-          "xmlns:b=\"http://schemas.openxmlformats.org/officeDocument/2006/"
+  ostr << "<?xml version=\"1.0\"?>"
+          "\n<b:Sources SelectedStyle=\"\" "
+          "xmlns:b=\"http://schemas.openxmlformats.org/officeDocument/"
+          "2006/"
           "bibliography\" "
           "xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/"
-          "bibliography\">\n";
+          "bibliography\">";
 }
 
-void MSWord::Footer(std::ostream &ostr) { ostr << "</b:Sources>\n"; }
+void MSWord::Footer(std::ostream &ostr) { ostr << "</b:Sources>"; }

@@ -241,9 +241,11 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
       key = prefs_it->second;
     }
 
-    prefs_it = setup.prefs["translate"];
-    if (prefs_it != prefs_end && prefs_it->second == "true") {
-      translate = true;
+    if (setup.strings.mFields.size()) {
+      prefs_it = setup.prefs["translate"];
+      if (prefs_it != prefs_end && prefs_it->second == "true") {
+        translate = true;
+      }
     }
 
     initialized = true;
@@ -268,7 +270,7 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
     ostr << ",\n"
          << std::setw(10) << std::setiosflags(std::ios::right) << "journal"
          << " = ";
-    if (type == "ARTICLE" && setup.strings.mFields.size() && translate) {
+    if (type == "ARTICLE" && translate) {
       auto strings_it = setup.strings[field_it->second];
       if (strings_it != setup.strings.end()) {
         ostr << '{' << strings_it->second << '}';
