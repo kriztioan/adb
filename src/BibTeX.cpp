@@ -228,6 +228,27 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
 
 bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
 
+  static bool initialized = false, translate = false;
+
+  static std::string_view key;
+
+  if (!initialized) {
+
+    auto prefs_end = setup.prefs.end();
+
+    auto prefs_it = setup.prefs["key"];
+    if (prefs_it != prefs_end) {
+      key = prefs_it->second;
+    }
+
+    prefs_it = setup.prefs["translate"];
+    if (prefs_it != prefs_end && prefs_it->second == "true") {
+      translate = true;
+    }
+
+    initialized = true;
+  }
+
   auto field_end = record.end();
 
   std::string_view type;
@@ -236,55 +257,42 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
     type = field_it->second;
   }
 
-  auto prefs_end = setup.prefs.end();
-
-  std::string biblcode;
-  auto prefs_it = setup.prefs["key"];
-  if (prefs_it != prefs_end) {
-    field_it = record[prefs_it->second];
-    if (field_it != field_end) {
-      biblcode = Coders::LaTeXDecode(field_it->second);
-    }
+  ostr << "@" << type << "{";
+  field_it = record[key];
+  if (field_it != field_end) {
+    ostr << Coders::LaTeXDecode(field_it->second);
   }
 
-  std::string journal;
   field_it = record["journal"];
   if (field_it != field_end) {
-    journal = field_it->second;
-  }
-
-  prefs_it = setup.prefs["translate"];
-  if (type == "ARTICLE" && prefs_it != prefs_end &&
-      prefs_it->second == "true") {
-    if (setup.strings.mFields.size()) {
-      auto strings_it = setup.strings[journal];
+    ostr << ",\n"
+         << std::setw(10) << std::setiosflags(std::ios::right) << "journal"
+         << " = ";
+    if (type == "ARTICLE" && setup.strings.mFields.size() && translate) {
+      auto strings_it = setup.strings[field_it->second];
       if (strings_it != setup.strings.end()) {
-        journal = strings_it->second;
+        ostr << '{' << strings_it->second << '}';
+      } else {
+        ostr << field_it->second;
       }
+    } else {
+      ostr << field_it->second;
     }
   }
 
-  static constexpr std::string_view AdBKeywords[] = {
+  static constexpr std::string_view keywords[] = {
       "ADScode", "ADSabstract",      "ADSfullpaper",
       "id",      "keywords",         "URL",
       "type",    "biblcode",         "archive",
       "journal", "doicrossrefstatus"};
 
   auto mFields = record.mFields;
-  for (const auto keyword : AdBKeywords) {
+  for (const auto keyword : keywords) {
     field_it = mFields.find(keyword);
     if (field_it != mFields.end()) {
       mFields.erase(field_it);
     }
   }
-
-  ostr << "@" << type << "{" << biblcode;
-  if (!journal.empty())
-    ostr << ",\n"
-         << std::setw(10) << std::setiosflags(std::ios::right)
-         << "journal"
-            " = "
-         << journal;
 
   for (const auto &field : mFields) {
     ostr << ",\n"
