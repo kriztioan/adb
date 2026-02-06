@@ -10,7 +10,7 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-#include "Coders.h"
+#include "Encoding.h"
 #include <string>
 #include <string_view>
 #include <unordered_map>

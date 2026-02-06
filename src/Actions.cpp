@@ -218,11 +218,11 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   std::string Title;
   record_it = record["title"];
   if (record_it != record_end) {
-    Title = Coders::LaTeXDecode(record_it->second);
+    Title = Encoding::LaTeXDecode(record_it->second);
   } else {
     record_it = record["booktitle"];
     if (record_it != record_end) {
-      Title = Coders::LaTeXDecode(record_it->second);
+      Title = Encoding::LaTeXDecode(record_it->second);
     } else {
       Title = "No title";
     }
@@ -231,12 +231,12 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   std::string Authors;
   record_it = record["author"];
   if (record_it != record_end) {
-    Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(record_it->second),
+    Authors = BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second),
                                    nauthors, http.self);
   } else {
     record_it = record["editor"];
     if (record_it != record_end) {
-      Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(record_it->second),
+      Authors = BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second),
                                      nauthors, http.self);
     }
   }
@@ -248,7 +248,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   } else {
     record_it = record["journal"];
     if (record_it != record_end) {
-      Journal = Coders::LaTeXDecode(record_it->second);
+      Journal = Encoding::LaTeXDecode(record_it->second);
       auto strings_it = strings.mFields.find(Journal);
       if (strings_it != strings.end()) {
         Journal = strings_it->second;
@@ -256,11 +256,11 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     } else {
       record_it = record["booktitle"];
       if (record_it != record_end) {
-        Journal = Coders::LaTeXDecode(record_it->second);
+        Journal = Encoding::LaTeXDecode(record_it->second);
       } else {
         record_it = record["publisher"];
         if (record_it != record_end) {
-          Journal = Coders::LaTeXDecode(record_it->second);
+          Journal = Encoding::LaTeXDecode(record_it->second);
         } else {
           Journal = "No journal";
         }
@@ -296,7 +296,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
             "      <span class=\"year\">";
     record_it = record["year"];
     if (record_it != record_end) {
-      sout << Coders::LaTeXDecode(record_it->second);
+      sout << Encoding::LaTeXDecode(record_it->second);
     }
     sout << "</span>\n"
          << "    </td>\n";
@@ -317,22 +317,22 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
          << "'</a></span>, <span class=\"year\">";
     record_it = record["year"];
     if (record_it != record_end) {
-      sout << Coders::LaTeXDecode(record_it->second);
+      sout << Encoding::LaTeXDecode(record_it->second);
     }
     sout << "</span>, <span class=\"journal\">" << Journal << "</span>";
     record_it = record["volume"];
     if (record_it != record_end) {
       sout << ", <span class=\"volume\">"
-           << Coders::LaTeXDecode(record_it->second) << "</span>";
+           << Encoding::LaTeXDecode(record_it->second) << "</span>";
     }
     record_it = record["pages"];
     if (record_it != record_end) {
       sout << ", <span class=\"pages\">"
-           << Coders::LaTeXDecode(record_it->second) << "</span>";
+           << Encoding::LaTeXDecode(record_it->second) << "</span>";
     }
     record_it = record["doi"];
     if (record_it != record_end) {
-      std::string doi = Coders::LaTeXDecode(record_it->second);
+      std::string doi = Encoding::LaTeXDecode(record_it->second);
       sout << " <a href=\"http://" << doiurl << "/" << doi << "\">" << doi
            << "</a>";
     }
@@ -344,7 +344,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   record_it = record["keywords"];
   if (record_it != record_end) {
     sout << "      "
-         << BibTeX::SplitKeywords(Coders::LaTeXDecode(record_it->second),
+         << BibTeX::SplitKeywords(Encoding::LaTeXDecode(record_it->second),
                                   http.self);
   }
   sout << "\n    </td>\n"
@@ -373,9 +373,9 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
            << PDFPath.string() << "&saveName=";
 
       if (!ADScode.empty()) {
-        sout << Coders::URLEncode(ADScode);
+        sout << Encoding::URLEncode(ADScode);
       } else if (!Title.empty()) {
-        sout << Coders::URLEncode(Title);
+        sout << Encoding::URLEncode(Title);
       } else {
         sout << id_str;
       }
@@ -558,7 +558,7 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
     if (scheme == "any") {
       for (auto &record : d.vRecords) {
         for (const auto &field : record.mFields) {
-          std::string v(Coders::LaTeXDecode(field.second));
+          std::string v(Encoding::LaTeXDecode(field.second));
           if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                           [](const char &c1, const char &c2) {
                             return (toupper(c1) == toupper(c2));
@@ -586,7 +586,7 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
         if (record_it == record_end) {
           continue;
         }
-        std::string v(helper(Coders::LaTeXDecode(record_it->second)));
+        std::string v(helper(Encoding::LaTeXDecode(record_it->second)));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
                           return (toupper(c1) == toupper(c2));
@@ -603,7 +603,7 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
         if (record_it == record_end) {
           continue;
         }
-        std::string v(Coders::LaTeXDecode(record_it->second));
+        std::string v(Encoding::LaTeXDecode(record_it->second));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
                           return (toupper(c1) == toupper(c2));
@@ -759,7 +759,7 @@ void DisplayMenu(HTTP &http, Preferences &prefs) {
           "value=\"";
   get_it = http.get["match"];
   if (get_it != get_end) {
-    sout << Coders::HTMLEncode(get_it->second);
+    sout << Encoding::HTMLEncode(get_it->second);
   }
   sout << "\" accesskey=\"s\"/> as \n"
        << HTML::Select(options, scheme, "scheme", "") << "\n"
@@ -917,13 +917,13 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   std::string Booktitle;
   field_it = (*record_it)["booktitle"];
   if (field_it != field_end) {
-    Booktitle = Coders::LaTeXDecode(field_it->second);
+    Booktitle = Encoding::LaTeXDecode(field_it->second);
   }
 
   std::string Title;
   field_it = (*record_it)["title"];
   if (field_it != field_end) {
-    Title = Coders::LaTeXDecode(field_it->second);
+    Title = Encoding::LaTeXDecode(field_it->second);
   } else if (!Booktitle.empty()) {
     Title = Booktitle;
   } else {
@@ -933,7 +933,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   std::string Comments;
   field_it = (*record_it)["comments"];
   if (field_it != field_end) {
-    std::string comments = Coders::LaTeXDecode(field_it->second);
+    std::string comments = Encoding::LaTeXDecode(field_it->second);
     Comments =
         "      <span title=\"" + comments + "\"><img class=\"comments\" src=\"";
     Comments = Comments.append(baseurl) +
@@ -944,19 +944,19 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   std::string Keywords;
   field_it = (*record_it)["keywords"];
   if (field_it != field_end) {
-    Keywords =
-        BibTeX::SplitKeywords(Coders::LaTeXDecode(field_it->second), http.self);
+    Keywords = BibTeX::SplitKeywords(Encoding::LaTeXDecode(field_it->second),
+                                     http.self);
   }
 
   std::string Authors;
   field_it = (*record_it)["author"];
   if (field_it != field_end) {
-    Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(field_it->second),
+    Authors = BibTeX::SplitAuthors(Encoding::LaTeXDecode(field_it->second),
                                    nauthors, http.self);
   } else {
     field_it = (*record_it)["editor"];
     if (field_it != field_end) {
-      Authors = BibTeX::SplitAuthors(Coders::LaTeXDecode(field_it->second),
+      Authors = BibTeX::SplitAuthors(Encoding::LaTeXDecode(field_it->second),
                                      nauthors, http.self);
     }
   }
@@ -969,7 +969,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   } else {
     field_it = (*record_it)["journal"];
     if (field_it != field_end) {
-      Journal = Coders::LaTeXDecode(field_it->second);
+      Journal = Encoding::LaTeXDecode(field_it->second);
       prefs_it = prefs["abbreviation"];
       if (prefs_it != prefs_end) {
         BibTeX::Strings strings(base_path / prefs_it->second, pool);
@@ -1029,33 +1029,33 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
        << Journal << "</span> <span id=\"volume\">";
   field_it = (*record_it)["volume"];
   if (field_it != field_end) {
-    sout << Coders::LaTeXDecode(field_it->second);
+    sout << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span> <span id=\"month\">";
   field_it = (*record_it)["month"];
   if (field_it != field_end) {
-    sout << Coders::LaTeXDecode(field_it->second);
+    sout << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span> <span id=\"year\">";
   field_it = (*record_it)["year"];
   if (field_it != field_end) {
-    sout << Coders::LaTeXDecode(field_it->second);
+    sout << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span> <span id=\"pages\">";
   field_it = (*record_it)["pages"];
   if (field_it != field_end) {
-    sout << Coders::LaTeXDecode(field_it->second);
+    sout << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span> <span id=\"publisher\">";
   field_it = (*record_it)["publisher"];
   if (field_it != field_end) {
-    sout << Coders::LaTeXDecode(field_it->second);
+    sout << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span> <span id=\"doi\">";
   field_it = (*record_it)["doi"];
   if (field_it != field_end) {
     sout << "<a href=\"http://";
-    std::string doi = Coders::LaTeXDecode(field_it->second);
+    std::string doi = Encoding::LaTeXDecode(field_it->second);
     prefs_it = prefs["doiurl"];
     if (prefs_it != prefs_end) {
       sout << prefs_it->second;
@@ -1094,7 +1094,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   sout << "</span> <span id=\"hardcopy\">";
   field_it = (*record_it)["dossier"];
   if (field_it != field_end) {
-    sout << " <b>Dossier #</b> " << Coders::LaTeXDecode(field_it->second);
+    sout << " <b>Dossier #</b> " << Encoding::LaTeXDecode(field_it->second);
   }
   sout << "</span>\n"
           "    </td>\n"
@@ -1188,7 +1188,7 @@ std::vector<std::string> split_on_comma(std::string_view sv) {
   const char *p = sv.data(), *q = p;
   while (*p) {
     if (*p == ',') {
-      v.emplace_back(Coders::LaTeXDecode(std::string_view(q + b, e - b)));
+      v.emplace_back(Encoding::LaTeXDecode(std::string_view(q + b, e - b)));
       b = e = 0;
       q = ++p;
       continue;
@@ -1203,7 +1203,7 @@ std::vector<std::string> split_on_comma(std::string_view sv) {
     ++p;
   }
   if (e > b) {
-    v.emplace_back(Coders::LaTeXDecode(std::string_view(q + b, e - b)));
+    v.emplace_back(Encoding::LaTeXDecode(std::string_view(q + b, e - b)));
   }
 
   return (v);
@@ -1219,13 +1219,13 @@ std::vector<std::string> split_on_and(std::string_view sv) {
   while ((e = strstr(b, " and "))) {
     e_len = strlen(e);
     len = b_len - e_len;
-    v.emplace_back(Coders::LaTeXDecode(std::string_view(b, len)));
+    v.emplace_back(Encoding::LaTeXDecode(std::string_view(b, len)));
     b = e + 5;
     b_len -= (len + 5);
   }
   b_len = strlen(b);
   if (b_len) {
-    v.emplace_back(Coders::LaTeXDecode(std::string_view(b, b_len)));
+    v.emplace_back(Encoding::LaTeXDecode(std::string_view(b, b_len)));
   }
 
   return (v);
@@ -1368,7 +1368,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"biblcode\" type=\"text\" value=\"";
   field_it = (*record_it)["biblcode"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1383,7 +1383,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"ADScode\" type=\"text\" value=\"";
   field_it = (*record_it)["ADScode"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />" << query_ads
        << "\n"
@@ -1399,7 +1399,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["doi"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />" << query_doi
        << "\n"
@@ -1415,7 +1415,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"keywords\" type=\"text\" value=\"";
   field_it = (*record_it)["keywords"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" onkeydown=\"return checkchar(event);\" "
           "onkeyup=\"checkinput(this);\" onblur=\"hide();\" "
@@ -1451,7 +1451,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["title"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1466,7 +1466,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"booktitle\" type=\"text\" value=\"";
   field_it = (*record_it)["booktitle"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1482,7 +1482,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["editor"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1497,7 +1497,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"organization\" type=\"text\" value=\"";
   field_it = (*record_it)["organization"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1512,7 +1512,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"address\" type=\"text\" value=\"";
   field_it = (*record_it)["address"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1528,7 +1528,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["series"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1543,7 +1543,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"edition\" type=\"text\" value=\"";
   field_it = (*record_it)["edition"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1558,7 +1558,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"howpublished\" type=\"text\" value=\"";
   field_it = (*record_it)["howpublished"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1573,7 +1573,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"chapter\" type=\"text\" value=\"";
   field_it = (*record_it)["chapter"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1589,7 +1589,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["school"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1604,7 +1604,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"institution\" type=\"text\" value=\"";
   field_it = (*record_it)["institution"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1619,7 +1619,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"author\">";
   field_it = (*record_it)["author"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "</textarea>\n"
           "    </td>\n"
@@ -1634,7 +1634,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"journal\" type=\"text\" value=\"";
   field_it = (*record_it)["journal"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1650,7 +1650,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["volume"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1666,7 +1666,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["number"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1682,7 +1682,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["pages"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1697,7 +1697,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"publisher\" type=\"text\" value=\"";
   field_it = (*record_it)["publisher"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1713,7 +1713,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["month"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1728,7 +1728,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["year"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1743,7 +1743,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "name=\"summary\" type=\"text\" value=\"";
   field_it = (*record_it)["summary"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1758,7 +1758,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["note"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1802,7 +1802,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "type=\"text\" value=\"";
   field_it = (*record_it)["URL"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1855,7 +1855,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
 
   field_it = (*record_it)["dossier"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "\" />\n"
           "    </td>\n"
@@ -1875,7 +1875,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
 
   field_it = (*record_it)["comments"];
   if (field_it != field_end) {
-    sout << Coders::HTMLEncode(field_it->second);
+    sout << Encoding::HTMLEncode(field_it->second);
   }
   sout << "</textarea>\n"
           "    </td>\n"
@@ -1908,7 +1908,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
             "      <input autocorrect=\"off\" autocapitalize=\"off\" "
             "autocomplete=\"off\" id=\""
          << field_it.first << "\" class=\"config\" name=\"" << field_it.first
-         << "\" type=\"text\" value=\"" << Coders::HTMLEncode(field_it.second)
+         << "\" type=\"text\" value=\"" << Encoding::HTMLEncode(field_it.second)
          << "\" /> <button id=\"del\" title=\"Del\" type=\"button\" "
             "onclick=\"delExtraKeyValuePair(this);\">Del</button>\n"
             "    </td>\n"
@@ -2119,7 +2119,7 @@ void QueryDOI(HTTP &http, Preferences &prefs) {
   if (prefs_it != prefs_end) {
     url = prefs_it->second;
   }
-  url += "/v1/works/" + Coders::URLEncode(doi) + "/transform";
+  url += "/v1/works/" + Encoding::URLEncode(doi) + "/transform";
 
   std::string_view pem;
   post_it = prefs["pem"];
@@ -2904,9 +2904,9 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Keyword = Coders::LaTeXDecode(uniq.at(offset));
+          Keyword = Encoding::LaTeXDecode(uniq.at(offset));
           Keyword = "<a href=\"" + http.self +
-                    "?action=search&match=" + Coders::URLEncode(Keyword) +
+                    "?action=search&match=" + Encoding::URLEncode(Keyword) +
                     "&scheme=keywords\">" + Keyword + "</a>";
         }
       }
@@ -2988,9 +2988,9 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Author = Coders::LaTeXDecode(uniq.at(offset));
+          Author = Encoding::LaTeXDecode(uniq.at(offset));
           Author = "<a href=\"" + http.self +
-                   "?action=search&match=" + Coders::URLEncode(Author) +
+                   "?action=search&match=" + Encoding::URLEncode(Author) +
                    "&scheme=author\">" + Author + "</a>";
         }
       }
@@ -3233,7 +3233,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     std::string_view author;
     field_it = record_it["author"];
     if (field_it != record_end) {
-      author = Coders::LaTeXDecode(field_it->second);
+      author = Encoding::LaTeXDecode(field_it->second);
       std::string::size_type pos = author.find(", ");
       if (pos != std::string::npos) {
         author = author.substr(0, pos);
@@ -3244,7 +3244,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
            "works?rows=1&sort=score&order=desc&query.bibliographic=";
     field_it = record_it["title"];
     if (field_it != record_end) {
-      url += Coders::URLEncode(field_it->second);
+      url += Encoding::URLEncode(field_it->second);
     }
     url += "&query.author=";
     url = url.append(author) + "&filter=from-pub-date:";
@@ -3502,18 +3502,26 @@ void Export(HTTP &http, Preferences &prefs) {
   std::string_view id_str = http.get["id"]->second;
   if (id_str != "-1") {
     if (format == "bibtex") {
-      BibTeX::Setup setup = {prefs.preferences, strings.strings};
-      d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
+      std::string_view key;
+      auto prefs_it = prefs["key"];
+      if (prefs_it != prefs_end) {
+        key = prefs_it->second;
+      }
+      d.ExportRecord(id_str, ofstr, key, BibTeX::Export);
       ++n_export;
     } else if (format == "msword") {
       MSWord::Header(ofstr);
-      MSWord::Setup setup = {prefs.preferences, strings.strings};
-      d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
+      std::string_view key;
+      auto prefs_it = prefs["key"];
+      if (prefs_it != prefs_end) {
+        key = prefs_it->second;
+      }
+      MSWord::ExportContext ctx = {strings.strings, key};
+      d.ExportRecord(id_str, ofstr, ctx, MSWord::Export);
       MSWord::Footer(ofstr);
       ++n_export;
     } else if (format == "text") {
-      Text::Setup setup = {prefs.preferences, strings.strings};
-      d.ExportRecord(id_str, ofstr, setup, Text::Export);
+      d.ExportRecord(id_str, ofstr, strings.strings, Text::Export);
       ++n_export;
     } else {
       return;
@@ -3527,16 +3535,24 @@ void Export(HTTP &http, Preferences &prefs) {
       std::vector<std::string> vIdentifiers = split_on_comma(post_it->second);
       for (const auto &id_str : vIdentifiers) {
         if (format == "bibtex") {
-          BibTeX::Setup setup = {prefs.preferences, strings.strings};
-          d.ExportRecord(id_str, ofstr, setup, BibTeX::Export);
+          std::string_view key;
+          auto prefs_it = prefs["key"];
+          if (prefs_it != prefs_end) {
+            key = prefs_it->second;
+          }
+          d.ExportRecord(id_str, ofstr, key, BibTeX::Export);
           ++n_export;
         } else if (format == "msword") {
-          MSWord::Setup setup = {prefs.preferences, strings.strings};
-          d.ExportRecord(id_str, ofstr, setup, MSWord::Export);
+          std::string_view key;
+          auto prefs_it = prefs["key"];
+          if (prefs_it != prefs_end) {
+            key = prefs_it->second;
+          }
+          MSWord::ExportContext ctx = {strings.strings, key};
+          d.ExportRecord(id_str, ofstr, ctx, MSWord::Export);
           ++n_export;
         } else if (format == "text") {
-          Text::Setup setup = {prefs.preferences, strings.strings};
-          d.ExportRecord(id_str, ofstr, setup, Text::Export);
+          d.ExportRecord(id_str, ofstr, strings.strings, Text::Export);
           ++n_export;
         } else {
           break;

@@ -73,7 +73,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
         }
         *p = '\0';
 
-        strings.mFields.emplace(key, Coders::LaTeXDecode(c, pool));
+        strings.mFields.emplace(key, Encoding::LaTeXDecode(c, pool));
 
         while (*p != '\n' && *p)
           ++p;

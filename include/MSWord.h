@@ -19,13 +19,13 @@
 
 namespace MSWord {
 
-using Setup = struct _Setup {
-  Record &prefs;
-  Record &strings;
+struct ExportContext {
+  Record strings;
+  std::string_view key;
 };
 
 void Header(std::ostream &ostr);
-bool Export(Record &record, std::ostream &ostr, Setup &setup);
+bool Export(Record &record, std::ostream &ostr, ExportContext &ctx);
 void Footer(std::ostream &ostr);
 }; // namespace MSWord
 

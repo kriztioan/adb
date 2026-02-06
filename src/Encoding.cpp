@@ -1,15 +1,15 @@
 /**
- *  @file   Coders.cpp
- *  @brief  Coders Class Implementation
+ *  @file   Encoding.cpp
+ *  @brief  Encoding Class Implementation
  *  @author KrizTioaN (christiaanboersma@hotmail.com)
  *  @date   2021-07-21
  *  @note   BSD-3 licensed
  *
  ***********************************************/
 
-#include "Coders.h"
+#include "Encoding.h"
 
-char *Coders::URLDecodeInplace(char *str) {
+char *Encoding::URLDecodeInplace(char *str) {
 
   size_t i;
   char *p = str, *q = p, r[3] = {0}, *s;
@@ -34,7 +34,7 @@ char *Coders::URLDecodeInplace(char *str) {
   return str;
 }
 
-std::string Coders::URLEncode(std::string_view sv) {
+std::string Encoding::URLEncode(std::string_view sv) {
 
   static constexpr const char reserved[] = "$&+,/:;=?@{}";
 
@@ -66,9 +66,9 @@ std::string Coders::URLEncode(std::string_view sv) {
   return (str);
 }
 
-std::string Coders::LaTeXDecode(std::string_view sv) {
+std::string Encoding::LaTeXDecode(std::string_view sv) {
 
-  static constexpr const char *translate = "&$%\\", *combine = "\"\'`^~",
+  static constexpr const char *translate = "$%\\", *combine = "\"\'`^~",
                               *vowels = "aeiounAEIOUN",
                               *combined[] = {"uml", "acute", "grave", "circ",
                                              "tilde"},
@@ -77,7 +77,8 @@ std::string Coders::LaTeXDecode(std::string_view sv) {
                                   "o",   "&oslash;", "O",      "&Oslash;",
                                   "ae",  "&aelig;",  "AA",     "&#8491;",
                                   "deg", "&deg;",    "dagger", "&dagger;",
-                                  "gt",  "&gt;",     "lt",     "&lt;"};
+                                  "gt",  "&gt;",     "lt",     "&lt;",
+                                  "&",   "&"};
 
   char translated[9], *offset;
 
@@ -128,17 +129,19 @@ std::string Coders::LaTeXDecode(std::string_view sv) {
   return (ostr.str());
 }
 
-std::string_view Coders::LaTeXDecode(std::string_view sv, Pool &pool) {
+std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
 
-  static constexpr const char
-      *translate = "&$%\\",
-      *combine = "\"\'`^~", *vowels = "aeiounAEIOUN",
-      *combined[] = {"uml", "acute", "grave", "circ", "tilde"},
-      *replace[] = {"c",   "&ccedil;", "C",      "&Cedil;",  "o",  "&oslash;",
-                    "O",   "&Oslash;", "ae",     "&aelig;",  "AA", "&#8491;",
-                    "deg", "&deg;",    "dagger", "&dagger;", "gt", "&gt;",
-                    "lt",  "&lt;"}; //"i", "&imath;"};
-
+  static constexpr const char *translate = "$%\\", *combine = "\"\'`^~",
+                              *vowels = "aeiounAEIOUN",
+                              *combined[] = {"uml", "acute", "grave", "circ",
+                                             "tilde"},
+                              *replace[] = {
+                                  "c",   "&ccedil;", "C",      "&Cedil;",
+                                  "o",   "&oslash;", "O",      "&Oslash;",
+                                  "ae",  "&aelig;",  "AA",     "&#8491;",
+                                  "deg", "&deg;",    "dagger", "&dagger;",
+                                  "gt",  "&gt;",     "lt",     "&lt;",
+                                  "&",   "&"}; //"i", "&imath;"};
   char *offset;
 
   size_t len = sv.length(), replace_len;
@@ -185,7 +188,7 @@ std::string_view Coders::LaTeXDecode(std::string_view sv, Pool &pool) {
   return (pool.sv());
 }
 
-std::string Coders::HTMLEncode(std::string_view sv) {
+std::string Encoding::HTMLEncode(std::string_view sv) {
 
   size_t len = sv.length();
 
@@ -210,7 +213,7 @@ std::string Coders::HTMLEncode(std::string_view sv) {
   return (str);
 }
 
-std::string Coders::HTML2XML(std::string html) {
+std::string Encoding::HTML2XML(std::string html) {
 
   std::string::size_type idx = 0;
   while ((idx = html.find("&", idx)) != std::string::npos) {

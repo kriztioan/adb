@@ -10,6 +10,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include "Encoding.h"
 #include "Record.h"
 
 #include <charconv>

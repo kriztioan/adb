@@ -9,19 +9,14 @@
 
 #include "Text.h"
 
-bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
+bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
+
   auto field_end = record.end();
 
-  std::string_view type;
-  auto field_it = record["type"];
-  if (field_it != field_end) {
-    type = field_it->second;
-  }
-
   std::string authors;
-  field_it = record["author"];
+  auto field_it = record["author"];
   if (field_it != field_end) {
-    authors = Coders::LaTeXDecode(field_it->second);
+    authors = Encoding::LaTeXDecode(field_it->second);
   }
 
   std::string::size_type begin = 0, end;
@@ -125,21 +120,24 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
 
   field_it = record["title"];
   if (field_it != field_end) {
-    ostr << ", \"" << Coders::LaTeXDecode(field_it->second) << "\"";
+    ostr << ", \"" << Encoding::LaTeXDecode(field_it->second) << "\"";
+  }
+
+  std::string_view type;
+  field_it = record["type"];
+  if (field_it != field_end) {
+    type = field_it->second;
   }
 
   std::string journal;
   if (type == "ARTICLE") {
     field_it = record["journal"];
     if (field_it != field_end) {
-      journal = Coders::LaTeXDecode(field_it->second);
-      auto prefs_it = setup.prefs["translate"];
-      if (prefs_it != setup.prefs.end() && prefs_it->second == "true") {
-        if (setup.strings.mFields.size()) {
-          auto strings_it = setup.strings[journal];
-          if (strings_it != setup.strings.end()) {
-            journal = strings_it->second;
-          }
+      journal = Encoding::LaTeXDecode(field_it->second);
+      if (strings.mFields.size()) {
+        auto strings_it = strings[journal];
+        if (strings_it != strings.end()) {
+          journal = strings_it->second;
         }
       }
     }
@@ -154,31 +152,31 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
   if (type == "INPROCEEDINGS") {
     field_it = record["booktitle"];
     if (field_it != field_end) {
-      ostr << " in \"" << Coders::LaTeXDecode(field_it->second) << "\"";
+      ostr << " in \"" << Encoding::LaTeXDecode(field_it->second) << "\"";
     }
 
     field_it = record["series"];
     if (field_it != field_end) {
-      ostr << ", " << Coders::LaTeXDecode(field_it->second);
+      ostr << ", " << Encoding::LaTeXDecode(field_it->second);
     }
   }
 
   field_it = record["year"];
   if (field_it != field_end) {
-    ostr << ", " << Coders::LaTeXDecode(record.mFields["year"]);
+    ostr << ", " << Encoding::LaTeXDecode(record.mFields["year"]);
   }
 
   if (type == "BOOK" || type == "INPROCEEDINGS") {
     field_it = record["publisher"];
     if (field_it != field_end) {
-      ostr << ", " << Coders::LaTeXDecode(field_it->second) << "\n";
+      ostr << ", " << Encoding::LaTeXDecode(field_it->second) << "\n";
     }
   }
 
   std::string editors;
   field_it = record["editor"];
   if (field_it != field_end) {
-    editors = Coders::LaTeXDecode(field_it->second);
+    editors = Encoding::LaTeXDecode(field_it->second);
   }
 
   std::string editor;
@@ -283,22 +281,22 @@ bool Text::Export(Record &record, std::ostream &ostr, Text::Setup &setup) {
 
   field_it = record["volume"];
   if (field_it != field_end) {
-    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
   }
 
   field_it = record["number"];
   if (field_it != field_end) {
-    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
   }
 
   field_it = record["pages"];
   if (field_it != field_end) {
-    ostr << ", " << Coders::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
   }
 
   field_it = record["doi"];
   if (field_it != field_end) {
-    ostr << " doi:" << Coders::LaTeXDecode(field_it->second);
+    ostr << " doi:" << Encoding::LaTeXDecode(field_it->second);
   }
 
   ostr << "\n\n";

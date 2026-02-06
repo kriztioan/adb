@@ -10,19 +10,14 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include "Coders.h"
+#include "Encoding.h"
 #include "Record.h"
 
 #include <iostream>
 
 namespace Text {
 
-using Setup = struct _Setup {
-  Record &prefs;
-  Record &strings;
-};
-
-bool Export(Record &record, std::ostream &ostr, Setup &setup);
+bool Export(Record &record, std::ostream &ostr, Record &strings);
 }; // namespace Text
 
 #endif // end of TEXT_H

@@ -56,7 +56,7 @@ void Record::Parse(char *data) {
       *q = '\0';
     }
     if (*v) {
-      v = Coders::URLDecodeInplace(v);
+      v = Encoding::URLDecodeInplace(v);
       auto field_it = mFields.find(k);
       if (field_it == mFields.end()) {
         mFields.emplace_hint(field_it, std::piecewise_construct,

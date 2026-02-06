@@ -10,7 +10,7 @@
 #ifndef BIBTEX_H
 #define BIBTEX_H
 
-#include "Coders.h"
+#include "Encoding.h"
 #include "Pool.h"
 #include "Record.h"
 #include "Strings.h"
@@ -20,17 +20,12 @@
 
 namespace BibTeX {
 
-using Setup = struct _Setup {
-  Record &prefs;
-  Record &strings;
-};
-
 std::string SplitAuthors(std::string_view authors, int max_authors,
                          std::string_view self);
 std::string SplitKeywords(std::string_view keywords, std::string_view self);
 
 Record Parse(std::string_view bibtex, size_t &nbytes_parsed, Pool &pool);
-bool Export(Record &record, std::ostream &ostr, Setup &setup);
+bool Export(Record &record, std::ostream &ostr, std::string_view &key);
 }; // namespace BibTeX
 
 #endif // end of BIBTEX_H

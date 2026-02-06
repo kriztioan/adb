@@ -9,7 +9,7 @@
 
 #include "MSWord.h"
 
-bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
+bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   static std::unordered_map<std::string, std::string> types;
 
@@ -37,32 +37,10 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
     type = "Misc";
   }
 
-  static bool initialized = false, translate = false;
-
-  static std::string_view key;
-
-  if (!initialized) {
-    auto prefs_end = setup.prefs.end();
-
-    auto prefs_it = setup.prefs["key"];
-    if (prefs_it != prefs_end) {
-      key = prefs_it->second;
-    }
-
-    if (setup.strings.mFields.size()) {
-      prefs_it = setup.prefs["translate"];
-      if (prefs_it != prefs_end && prefs_it->second == "true") {
-        translate = true;
-      }
-    }
-
-    initialized = true;
-  }
-
   std::string tag;
-  field_it = record[key];
+  field_it = record[ctx.key];
   if (field_it != field_end) {
-    tag = Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
+    tag = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
   }
 
   UUID uuid;
@@ -84,12 +62,12 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   field_it = record["title"];
   if (field_it != field_end) {
     ostr << "\n<b:Title>"
-         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
          << "</b:Title>";
   }
   field_it = record["year"];
   if (field_it != field_end) {
-    ostr << "\n<b:Year>" << Coders::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Year>" << Encoding::LaTeXDecode(field_it->second)
          << "</b:Year>";
   }
   ostr << "\n<b:Author>"
@@ -99,7 +77,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   std::string authors;
   field_it = record["author"];
   if (field_it != field_end) {
-    authors = Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
+    authors = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
   }
 
   std::string::size_type begin = 0, end;
@@ -187,7 +165,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   std::string editors;
   field_it = record["editor"];
   if (field_it != field_end) {
-    editors = Coders::HTML2XML(Coders::LaTeXDecode(field_it->second));
+    editors = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
   }
 
   if (editors.length() != 0) {
@@ -279,13 +257,13 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
 
   field_it = record["pages"];
   if (field_it != field_end) {
-    ostr << "\n<b:Pages>" << Coders::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Pages>" << Encoding::LaTeXDecode(field_it->second)
          << "</b:Pages>";
   }
 
   field_it = record["volume"];
   if (field_it != field_end) {
-    ostr << "\n<b:Volume>" << Coders::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Volume>" << Encoding::LaTeXDecode(field_it->second)
          << "</b:Volume>";
   }
 
@@ -293,14 +271,14 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
     std::string_view journal;
     field_it = record["journal"];
     if (field_it != field_end) {
-      if (translate) {
-        auto strings_it = setup.strings[field_it->second];
-        if (strings_it != setup.strings.end()) {
+      if (ctx.strings.mFields.size() != 0) {
+        auto strings_it = ctx.strings[field_it->second];
+        if (strings_it != ctx.strings.end()) {
           journal = strings_it->second;
         }
       }
       ostr << "\n<b:JournalName>"
-           << Coders::HTML2XML(Coders::LaTeXDecode(journal))
+           << Encoding::HTML2XML(Encoding::LaTeXDecode(journal))
            << "</b:JournalName>";
     }
   }
@@ -308,27 +286,27 @@ bool MSWord::Export(Record &record, std::ostream &ostr, Setup &setup) {
   field_it = record["booktitle"];
   if (field_it != field_end) {
     ostr << "\n<b:BookTitle>"
-         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
          << "</b:BookTitle>";
   }
 
   field_it = record["series"];
   if (field_it != field_end) {
     ostr << "\n<b:ConferenceName>"
-         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
          << "</b:ConferenceName>";
   }
 
   field_it = record["publisher"];
   if (field_it != field_end) {
     ostr << "\n<b:Publisher>"
-         << Coders::HTML2XML(Coders::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
          << "</b:Publisher>";
   }
 
   field_it = record["month"];
   if (field_it != field_end) {
-    ostr << "\n<b:Month>" << Coders::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Month>" << Encoding::LaTeXDecode(field_it->second)
          << "</b:Month>";
   }
 

@@ -39,12 +39,12 @@ public:
   bool RemoveRecord(std::string_view id_str);
 
   template <typename T>
-  bool ExportRecord(std::string_view id_str, std::ostream &ostr, T &user_data,
+  bool ExportRecord(std::string_view id_str, std::ostream &ostr, T &userdata,
                     bool (*parser)(Record &record, std::ostream &ostr,
                                    T &user_data)) {
     for (auto &r : vRecords) {
       if (r.mFields.at("id") == id_str) {
-        if (!parser(r, ostr, user_data)) {
+        if (!parser(r, ostr, userdata)) {
           return (false);
         }
         return (true);

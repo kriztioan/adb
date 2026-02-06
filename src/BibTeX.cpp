@@ -31,7 +31,7 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
     }
     html += "<span title=\"Search for &apos;" + author + "&apos;\"><a href=\"";
     html = html.append(self) +
-           "?action=search&match=" + Coders::HTMLEncode(author) +
+           "?action=search&match=" + Encoding::HTMLEncode(author) +
            "&scheme=author\">" + author + "</a></span>";
   };
 
@@ -122,7 +122,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
   if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '{') {
     return (Record{});
   }
-  pool << "type=" << Coders::URLEncode(buff.c_str())
+  pool << "type=" << Encoding::URLEncode(buff.c_str())
        << "&ADSabstract=on&ADSfullpaper=on";
   buff.clear();
   ++nbytes_parsed;
@@ -147,7 +147,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
   else if (bibtex[nbytes_parsed] == '}') {
     return (Record{});
   }
-  pool << "&biblcode=" << Coders::URLEncode(buff.c_str());
+  pool << "&biblcode=" << Encoding::URLEncode(buff.c_str());
 
   buff.clear();
   ++nbytes_parsed;
@@ -170,7 +170,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
     if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '=') {
       return (Record{});
     }
-    pool << '&' << Coders::URLEncode(buff.c_str());
+    pool << '&' << Encoding::URLEncode(buff.c_str());
     buff.clear();
     ++nbytes_parsed;
 
@@ -216,7 +216,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
       pairs = false;
     }
 
-    pool << '=' << Coders::URLEncode(buff.c_str());
+    pool << '=' << Encoding::URLEncode(buff.c_str());
     buff.clear();
     ++nbytes_parsed;
   }
@@ -226,30 +226,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
   return (Record(const_cast<char *>(pool.sv().data())));
 }
 
-bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
-
-  static bool initialized = false, translate = false;
-
-  static std::string_view key;
-
-  if (!initialized) {
-
-    auto prefs_end = setup.prefs.end();
-
-    auto prefs_it = setup.prefs["key"];
-    if (prefs_it != prefs_end) {
-      key = prefs_it->second;
-    }
-
-    if (setup.strings.mFields.size()) {
-      prefs_it = setup.prefs["translate"];
-      if (prefs_it != prefs_end && prefs_it->second == "true") {
-        translate = true;
-      }
-    }
-
-    initialized = true;
-  }
+bool BibTeX::Export(Record &record, std::ostream &ostr, std::string_view &key) {
 
   auto field_end = record.end();
 
@@ -262,31 +239,12 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, BibTeX::Setup &setup) {
   ostr << "@" << type << "{";
   field_it = record[key];
   if (field_it != field_end) {
-    ostr << Coders::LaTeXDecode(field_it->second);
-  }
-
-  field_it = record["journal"];
-  if (field_it != field_end) {
-    ostr << ",\n"
-         << std::setw(10) << std::setiosflags(std::ios::right) << "journal"
-         << " = ";
-    if (type == "ARTICLE" && translate) {
-      auto strings_it = setup.strings[field_it->second];
-      if (strings_it != setup.strings.end()) {
-        ostr << '{' << strings_it->second << '}';
-      } else {
-        ostr << field_it->second;
-      }
-    } else {
-      ostr << field_it->second;
-    }
+    ostr << Encoding::LaTeXDecode(field_it->second);
   }
 
   static constexpr std::string_view keywords[] = {
-      "ADScode", "ADSabstract",      "ADSfullpaper",
-      "id",      "keywords",         "URL",
-      "type",    "biblcode",         "archive",
-      "journal", "doicrossrefstatus"};
+      "ADScode", "ADSabstract", "ADSfullpaper", "id",      "keywords",
+      "URL",     "type",        "biblcode",     "archive", "doicrossrefstatus"};
 
   auto mFields = record.mFields;
   for (const auto keyword : keywords) {

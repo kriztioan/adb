@@ -77,9 +77,9 @@ bool Database::Commit() {
   ofstr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
   for (auto &r : vRecords) {
     auto f = r.mFields.begin();
-    ofstr << f->first << '=' << Coders::URLEncode(f->second);
+    ofstr << f->first << '=' << Encoding::URLEncode(f->second);
     for (++f; f != r.mFields.end(); ++f) {
-      ofstr << '&' << f->first << '=' << Coders::URLEncode(f->second);
+      ofstr << '&' << f->first << '=' << Encoding::URLEncode(f->second);
     }
     ofstr << "\n";
   }
@@ -136,13 +136,13 @@ void Database::SortRecords(std::string_view key, bool reverse) {
 
   if (!reverse) {
     std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
-      return (Coders::LaTeXDecode(r1.mFields[key]) <
-              Coders::LaTeXDecode(r2.mFields[key]));
+      return (Encoding::LaTeXDecode(r1.mFields[key]) <
+              Encoding::LaTeXDecode(r2.mFields[key]));
     });
   } else {
     std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
-      return (Coders::LaTeXDecode(r1.mFields[key]) >
-              Coders::LaTeXDecode(r2.mFields[key]));
+      return (Encoding::LaTeXDecode(r1.mFields[key]) >
+              Encoding::LaTeXDecode(r2.mFields[key]));
     });
   }
 };

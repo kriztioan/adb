@@ -16,7 +16,7 @@ HTTP::HTTP() {
   }
 
   if (getenv("REQUEST_URI") && getenv("QUERY_STRING")) {
-    uri = Coders::URLDecodeInplace(getenv("REQUEST_URI"));
+    uri = Encoding::URLDecodeInplace(getenv("REQUEST_URI"));
     if (!uri.empty() && uri.find('?') == std::string::npos) {
       uri += "?";
       uri += getenv("QUERY_STRING");
