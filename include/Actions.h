@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef ACTIONS_H
-#define ACTIONS_H
+#pragma once
 
 #include "BibTeX.h"
 #include "Database.h"
@@ -97,5 +96,3 @@ static constexpr const std::array<std::pair<std::string_view, act>, 22> actions{
      {"splash", DisplaySplash},
      {"tools", DisplayToolsForm},
      {"update", Update}}};
-
-#endif // end of ACTIONS_H

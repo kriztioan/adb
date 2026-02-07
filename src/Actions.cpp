@@ -333,7 +333,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     record_it = record["doi"];
     if (record_it != record_end) {
       std::string doi = Encoding::LaTeXDecode(record_it->second);
-      sout << " <a href=\"http://" << doiurl << "/" << doi << "\">" << doi
+      sout << " <a href=\"https://" << doiurl << "/" << doi << "\">" << doi
            << "</a>";
     }
     sout << "\n";
@@ -353,7 +353,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   if (record_it != record_end && record_it->second == "on" &&
       !ADScode.empty()) {
     sout << "      <button id=\"abstract\" title=\"ADS Abstract\" "
-            "type=\"button\" onclick=\"gotoURL('http://"
+            "type=\"button\" onclick=\"gotoURL('https://"
          << adsurl << "/abs/" << ADScode << "/abstract')\">Abstract</button> ";
   }
   sout << "\n"
@@ -385,7 +385,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     record_it = record["ADSfullpaper"];
     if (record_it != record_end && record_it->second == "on") {
       sout << "      <button id=\"pdf\" title=\"ADS PDF\" "
-              "type=\"button\" onclick=\"gotoURL('http://"
+              "type=\"button\" onclick=\"gotoURL('https://"
            << adsurl << "/link_gateway/" << ADScode
            << "/PUB_PDF')\">Paper</button>";
     } else {
@@ -1054,7 +1054,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   sout << "</span> <span id=\"doi\">";
   field_it = (*record_it)["doi"];
   if (field_it != field_end) {
-    sout << "<a href=\"http://";
+    sout << "<a href=\"https://";
     std::string doi = Encoding::LaTeXDecode(field_it->second);
     prefs_it = prefs["doiurl"];
     if (prefs_it != prefs_end) {
@@ -1106,7 +1106,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     field_it = (*record_it)["ADSabstract"];
     if (field_it != field_end && field_it->second == "on") {
       sout << "<button id=\"abstract\" title=\"ADS Abstract\" "
-              "type=\"button\" onclick=\"gotoURL('http://"
+              "type=\"button\" onclick=\"gotoURL('https://"
            << adsurl << "/abs/" << ADScode
            << "/abstract')\">Abstract</button> ";
     }
@@ -1129,7 +1129,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     field_it = (*record_it)["ADSfullpaper"];
     if (field_it != field_end && field_it->second == "on") {
       sout << "  <button id=\"pdf\" title=\"ADS PDF\" "
-              "type=\"button\" onclick=\"gotoURL('http://"
+              "type=\"button\" onclick=\"gotoURL('https://"
            << adsurl << "/link_gateway/" << ADScode
            << "/PUB_PDF')\">Paper</button>";
     }
@@ -2374,7 +2374,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   if (prefs_it != prefs_end) {
     sout << prefs_it->second;
   }
-  sout << "\" /> <i>no leading http</i>\n"
+  sout << "\" /> <i>no leading http(s)</i>\n"
           "    </td>\n"
           "  </tr>\n"
           "  <tr>\n"

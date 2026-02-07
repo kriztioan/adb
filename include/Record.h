@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef RECORD_H
-#define RECORD_H
+#pragma once
 
 #include "Encoding.h"
 #include <string>
@@ -34,5 +33,3 @@ public:
 
   std::unordered_map<std::string_view, std::string_view> mFields;
 };
-
-#endif // end of RECORD_H

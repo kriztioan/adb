@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef TEXT_H
-#define TEXT_H
+#pragma once
 
 #include "Encoding.h"
 #include "Record.h"
@@ -19,5 +18,3 @@ namespace Text {
 
 bool Export(Record &record, std::ostream &ostr, Record &strings);
 }; // namespace Text
-
-#endif // end of TEXT_H

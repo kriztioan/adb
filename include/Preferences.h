@@ -7,8 +7,8 @@
  *
  ***********************************************/
 
-#ifndef PREFERENCES_H
-#define PREFERENCES_H
+#pragma once
+
 #include "Record.h"
 
 #include <cstdio>
@@ -39,5 +39,3 @@ private:
   bool state;
   char *data = nullptr;
 };
-
-#endif // end of PREFERENCES_H

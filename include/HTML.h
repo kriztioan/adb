@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef HTML_H
-#define HTML_H
+#pragma once
 
 #include <filesystem>
 #include <iomanip>
@@ -25,5 +24,3 @@ std::string Highlight(std::string_view body, std::string_view match);
 std::string Filesize(std::filesystem::path &f);
 
 }; // namespace HTML
-
-#endif // end of HTML_H

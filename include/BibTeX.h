@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef BIBTEX_H
-#define BIBTEX_H
+#pragma once
 
 #include "Encoding.h"
 #include "Pool.h"
@@ -27,5 +26,3 @@ std::string SplitKeywords(std::string_view keywords, std::string_view self);
 Record Parse(std::string_view bibtex, size_t &nbytes_parsed, Pool &pool);
 bool Export(Record &record, std::ostream &ostr, std::string_view &key);
 }; // namespace BibTeX
-
-#endif // end of BIBTEX_H

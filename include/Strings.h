@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef STRINGS_H
-#define STRINGS_H
+#pragma once
 
 #include "Pool.h"
 #include "Record.h"
@@ -44,5 +43,3 @@ private:
 };
 
 } // namespace BibTeX
-
-#endif // end of STRINGS_H

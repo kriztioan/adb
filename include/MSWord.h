@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef MSWORD_H
-#define MSWORD_H
+#pragma once
 
 #include "Record.h"
 #include "Uuid.h"
@@ -20,13 +19,11 @@
 namespace MSWord {
 
 struct ExportContext {
-  Record strings;
-  std::string_view key;
+  Record &strings;
+  std::string_view &key;
 };
 
 void Header(std::ostream &ostr);
 bool Export(Record &record, std::ostream &ostr, ExportContext &ctx);
 void Footer(std::ostream &ostr);
 }; // namespace MSWord
-
-#endif // end of MSWORD_H

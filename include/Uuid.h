@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef UUID_H
-#define UUID_H
+#pragma once
 
 #include <string>
 
@@ -25,5 +24,3 @@ namespace Uuid {
 bool UUIDFromURL(UUID *uuid, const std::string &url);
 
 }; // namespace Uuid
-
-#endif // end of UUID_H

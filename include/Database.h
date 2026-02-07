@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef DATABASE_H
-#define DATABASE_H
+#pragma once
 
 #include "Pool.h"
 #include "Record.h"
@@ -72,5 +71,3 @@ private:
   bool state;
   char *data = nullptr;
 };
-
-#endif // end of DATABASE_H

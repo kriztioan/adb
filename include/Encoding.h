@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef ENCODING_H
-#define ENCODING_H
+#pragma once
 
 #include <array>
 #include <charconv>
@@ -29,5 +28,3 @@ std::string HTMLEncode(std::string_view sv);
 std::string HTML2XML(std::string html);
 
 }; // namespace Encoding
-
-#endif // end of ENCODING_H

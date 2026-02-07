@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef JAVASCRIPT_H
-#define JAVASCRIPT_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -17,5 +16,3 @@ namespace Javascript {
 
 std::string Array(std::vector<std::string> &v);
 }; // namespace Javascript
-
-#endif // end of JAVASCRIPT_H

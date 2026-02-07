@@ -1,3 +1,12 @@
+/**
+ *  @file   Pool.cpp
+ *  @brief  Pool Class Implementation
+ *  @author KrizTioaN (christiaanboersma@hotmail.com)
+ *  @date   2026-02-06
+ *  @note   BSD-3 licensed
+ *
+ ***********************************************/
+
 #include "Pool.h"
 
 PoolBuf::PoolBuf(size_t size) : _size(size) {

@@ -7,8 +7,7 @@
  *
  ***********************************************/
 
-#ifndef HTTP_H
-#define HTTP_H
+#pragma once
 
 #include "Encoding.h"
 #include "Record.h"
@@ -71,5 +70,3 @@ private:
 };
 
 int BIO_do_connect_timeout(BIO *bio, struct timeval *timeout);
-
-#endif // end HTTP_H

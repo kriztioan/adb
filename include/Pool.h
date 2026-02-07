@@ -1,5 +1,13 @@
-#ifndef POOL_H
-#define POOL_H
+/**
+ *  @file   Pool.h
+ *  @brief  Pool Class Definition
+ *  @author KrizTioaN (christiaanboersma@hotmail.com)
+ *  @date   2026-02-06
+ *  @note   BSD-3 licensed
+ *
+ ***********************************************/
+
+#pragma once
 
 #include <cstring>
 #include <iostream>
@@ -57,4 +65,3 @@ private:
   PoolBuf buf;
   std::size_t start = 0;
 };
-#endif // end of POOL_H
