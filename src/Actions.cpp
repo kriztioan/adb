@@ -40,9 +40,8 @@ void WriteHTMLHeader(Preferences &prefs) {
   }
 
   sout << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-          "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" "
-          "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tranitional.dtd\">\n"
-          "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+          "<!DOCTYPE html>\n"
+          "<html lang=\"en-US\">\n"
           "<head>\n"
           "  <meta name=\"mobile-web-app-capable\" content=\"yes\" />\n"
           "  <meta name=\"apple-mobile-web-app-status-bar-style\" "
@@ -2608,20 +2607,6 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
     sout << HTML::Filesize(TextPath);
   }
   sout << "\n"
-          "    </td>\n"
-          "  </tr>\n"
-          "  <tr>\n"
-          "    <td>\n"
-          "      Translate abbreviations\n"
-          "    </td>\n"
-          "    <td>\n"
-          "      <input name=\"translate\" type=\"checkbox\" value=\"true\"";
-  prefs_it = prefs["translate"];
-  if (prefs_it != prefs_end && prefs_it->second == "true") {
-    sout << " checked=\"checked\"";
-  }
-
-  sout << "\" /> BibTeX\n"
           "    </td>\n"
           "  </tr>\n"
           "  <tr>\n"
