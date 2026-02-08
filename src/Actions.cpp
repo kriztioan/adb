@@ -408,7 +408,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   sout << "\n"
           "    </td>\n"
           "    <td>\n"
-          "      <button class=\"modify\" title=\"Modify\" "
+          "      <button class=\"modify\" title=\"Modify this record\" "
           "type=\"button\" onclick=\"gotoURL('"
        << http.self << "?action=edit&id=" << id_str << search
        << "')\">Modify</button>\n"
@@ -476,10 +476,10 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
           "  </colgroup>\n"
           "  <tr id=\"submenu\">\n"
           "    <td id=\"col1\" colspan=\"10\">\n"
-          "      <button id=\"delete\" title=\"Delete selected records\" "
+          "      <button id=\"delete\" title=\"Delete selected record(s)\" "
           "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
           "delete the selected "
-          "records?'))document.record.submit();\">Delete</button> <button "
+          "record(s)?'))document.record.submit();\">Delete</button> <button "
           "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
           "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
           "type=\"button\" onclick=\"document.record.action='"
@@ -645,10 +645,10 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
           "  </tr>\n"
           "  <tr id=\"submenu\">\n"
           "    <td id=\"col1\" colspan=\"10\">\n"
-          "      <button id=\"delete\" title=\"Delete selected records\" "
+          "      <button id=\"delete\" title=\"Delete selected record(s)\" "
           "type=\"button\" onclick=\"if(confirm('Are you sure you want to "
           "delete the selected "
-          "records?'))document.record.submit();\">Delete</button> <button "
+          "record(s)?'))document.record.submit();\">Delete</button> <button "
           "id=\"reset\" title=\"Reset\" type=\"reset\">Reset</button>\n"
           "      <button id=\"BibTeX\" title=\"Export as BibTeX\" "
           "type=\"button\" onclick=\"document.record.action='"
@@ -847,14 +847,6 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     adsurl = prefs_it->second;
   }
 
-  int nauthors = -1;
-  prefs_it = prefs["nauthors"];
-  if (prefs_it != prefs_end) {
-    std::from_chars(prefs_it->second.data(),
-                    prefs_it->second.data() + prefs_it->second.size(),
-                    nauthors);
-  }
-
   auto get_end = http.get.end();
 
   std::string search;
@@ -945,19 +937,19 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   field_it = (*record_it)["keywords"];
   if (field_it != field_end) {
     Keywords = BibTeX::SplitKeywords(
-        Encoding::LaTeXDecode(field_it->second, pool), http.self);
+        Encoding::LaTeXDecode(field_it->second, pool), http.self, " – ");
   }
 
   std::string Authors;
   field_it = (*record_it)["author"];
   if (field_it != field_end) {
     Authors = BibTeX::SplitAuthors(
-        Encoding::LaTeXDecode(field_it->second, pool), nauthors, http.self);
+        Encoding::LaTeXDecode(field_it->second, pool), -1, http.self);
   } else {
     field_it = (*record_it)["editor"];
     if (field_it != field_end) {
       Authors = BibTeX::SplitAuthors(
-          Encoding::LaTeXDecode(field_it->second, pool), nauthors, http.self);
+          Encoding::LaTeXDecode(field_it->second, pool), -1, http.self);
     }
   }
 
@@ -1165,7 +1157,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           "title=\"Export Text\" type=\"button\" onclick=\"gotoURL('"
        << http.self << "?action=exportText&id=" << id_str << search
        << "')\">Export as Text</button> &mdash; <button id=\"modify\" "
-          "title=\"Modify\" type=\"button\" onclick=\"gotoURL('"
+          "title=\"Modify this record\" type=\"button\" onclick=\"gotoURL('"
        << http.self << "?action=edit&id=" << id_str << search
        << "')\">Modify</button> <button id=\"delete\" title=\"Delete this "
           "record\" type=\"button\" onclick=\"if(confirm('Are you sure you "

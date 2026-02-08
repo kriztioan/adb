@@ -21,7 +21,8 @@ namespace BibTeX {
 
 std::string SplitAuthors(std::string_view authors, int max_authors,
                          std::string_view self);
-std::string SplitKeywords(std::string_view keywords, std::string_view self);
+std::string SplitKeywords(std::string_view keywords, std::string_view self,
+                          std::string_view separator = " ");
 
 Record Parse(std::string_view bibtex, size_t &nbytes_parsed, Pool &pool);
 bool Export(Record &record, std::ostream &ostr, std::string_view &key);

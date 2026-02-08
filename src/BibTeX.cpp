@@ -21,7 +21,7 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
 
   std::string::size_type beg = 0, end = authors.find(" and ");
 
-  auto output_html = [&]() {
+  auto output_author = [&]() {
     std::string author;
 
     for (const auto &c : authors.substr(beg, end - beg)) {
@@ -29,19 +29,20 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
         author += c;
       }
     }
-    html += "<span title=\"Search for &apos;" + author + "&apos;\"><a href=\"";
+    html += "<span title=\"Search for author &apos;" + author +
+            "&apos;\"><a href=\"";
     html = html.append(self) + "?action=search&match=" + author +
            "&scheme=author\">" + author + "</a></span>";
   };
 
   int nauthors = 1;
-  output_html();
+  output_author();
   if (end != std::string::npos) {
     while (nauthors < max_authors || max_authors == -1) {
       beg = end + 5;
       end = authors.find(" and ", beg);
       html += ", ";
-      output_html();
+      output_author();
       ++nauthors;
       if (end == std::string::npos) {
         break;
@@ -56,27 +57,38 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
 }
 
 std::string BibTeX::SplitKeywords(std::string_view keywords,
-                                  std::string_view self) {
+                                  std::string_view self,
+                                  std::string_view separator) {
 
   std::string html;
-
-  html.reserve(256);
-
-  std::string::size_type begin = 0, end;
-
-  while ((end = keywords.find(", ", begin)) != std::string::npos) {
-    std::string keyword(keywords, begin, end - begin);
-    html += " <a href=\"";
-    html = html.append(self) + "?action=search&match=" + keyword +
-           "&scheme=keywords\">" + keyword + "</a>";
-    begin = end + 2;
+  if (keywords.empty()) {
+    return (html);
   }
 
-  if (!keywords.empty()) {
-    std::string keyword(keywords.substr(begin));
-    html += " <a href=\"";
+  html.reserve(128);
+
+  std::string::size_type beg = 0, end = keywords.find(", ");
+
+  auto output_keyword = [&]() {
+    std::string keyword;
+
+    for (const auto &c : keywords.substr(beg, end - beg)) {
+      if (c != '{' && c != '}') {
+        keyword += c;
+      }
+    }
+    html += "<span title=\"Search for keyword &apos;" + keyword +
+            "&apos;\"><a href=\"";
     html = html.append(self) + "?action=search&match=" + keyword +
-           "&scheme=keywords\">" + keyword + "</a>";
+           "&scheme=keywords\">" + keyword + "</a></span>";
+  };
+
+  output_keyword();
+  while (end != std::string::npos) {
+    beg = end + 2;
+    end = keywords.find(", ", beg);
+    html = html.append(separator);
+    output_keyword();
   }
 
   return (html);
