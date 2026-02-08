@@ -38,7 +38,7 @@ std::string Encoding::URLEncode(std::string_view sv) {
 
   static constexpr const char reserved[] = "$&+,/:;=?@{}";
 
-  size_t len = sv.length();
+  std::string_view::size_type len = sv.length();
 
   std::string str;
 
@@ -47,7 +47,7 @@ std::string Encoding::URLEncode(std::string_view sv) {
   char buff[4];
 
   size_t j;
-  for (size_t i = 0; i < len; i++) {
+  for (std::string_view::size_type i = 0; i < len; i++) {
     if (sv[i] == ' ') {
       str += '+';
     } else {
@@ -66,120 +66,109 @@ std::string Encoding::URLEncode(std::string_view sv) {
   return (str);
 }
 
-std::string Encoding::LaTeXDecode(std::string_view sv) {
-
-  static constexpr const char *translate = "$%\\", *combine = "\"\'`^~",
-                              *vowels = "aeiounAEIOUN",
-                              *combined[] = {"uml", "acute", "grave", "circ",
-                                             "tilde"},
-                              *replace[] = {
-                                  "c",   "&ccedil;", "C",      "&Cedil;",
-                                  "o",   "&oslash;", "O",      "&Oslash;",
-                                  "ae",  "&aelig;",  "AA",     "&#8491;",
-                                  "deg", "&deg;",    "dagger", "&dagger;",
-                                  "gt",  "&gt;",     "lt",     "&lt;",
-                                  "&",   "&"};
-
-  char translated[9], *offset;
-
-  size_t len = sv.length();
-
-  std::ostringstream ostr;
-
-  for (std::string::size_type i = 0; i < len; i++) {
-    if (sv[i] == '\\') {
-      if (strchr(translate, sv[i + 1])) {
-        snprintf(translated, sizeof(translated), "&#%d;", sv[++i]);
-        ostr << translated;
-        continue;
-      } else if ((offset = const_cast<char *>(strchr(combine, sv[i + 1])))) {
-        if (strchr(vowels, sv[i + 2])) {
-          snprintf(translated, sizeof(translated), "&%c%s;", sv[i + 2],
-                   combined[(offset - combine)]);
-          ostr << translated;
-          i += 2;
-          continue;
-        }
-      } else {
-        for (unsigned j = 0; j < sizeof(replace) / sizeof(char *); j += 2) {
-          size_t len1 = strlen(replace[j]);
-          if (sv.substr(i + 1, len1) == replace[j]) {
-            ostr << replace[j + 1];
-            i += len1;
-            break;
-          }
-        }
-        continue;
-      }
-    } else if (sv[i] == '$') {
-      if (sv[i + 1] == '\\') {
-        ostr << "&";
-        ++i;
-        while (sv[++i] != '$' && i < len) {
-          ostr << sv[i];
-        }
-        ostr << ";";
-        continue;
-      }
-    } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~') {
-      continue;
-    }
-    ostr << sv[i];
-  }
-  return (ostr.str());
-}
-
 std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
 
-  static constexpr const char *translate = "$%\\", *combine = "\"\'`^~",
-                              *vowels = "aeiounAEIOUN",
-                              *combined[] = {"uml", "acute", "grave", "circ",
-                                             "tilde"},
-                              *replace[] = {
-                                  "c",   "&ccedil;", "C",      "&Cedil;",
-                                  "o",   "&oslash;", "O",      "&Oslash;",
-                                  "ae",  "&aelig;",  "AA",     "&#8491;",
-                                  "deg", "&deg;",    "dagger", "&dagger;",
-                                  "gt",  "&gt;",     "lt",     "&lt;",
-                                  "&",   "&"}; //"i", "&imath;"};
-  char *offset;
-
-  size_t len = sv.length(), replace_len;
+  std::string_view::size_type len = sv.length();
 
   pool.begin();
-  for (std::string::size_type i = 0; i < len; i++) {
-    if (sv[i] == '\\') {
-      if (strchr(translate, sv[i + 1])) {
-        pool << "&#" << static_cast<int>(sv[++i]) << ";";
-        continue;
-      } else if ((offset = const_cast<char *>(strchr(combine, sv[i + 1])))) {
-        if (strchr(vowels, sv[i + 2])) {
-          pool << '&' << sv[i + 2] << combined[(offset - combine)] << ';';
+  for (std::string_view::size_type i = 0; i < len; i++) {
+    if (sv[i] == '_') {
+      if (i + 1 == len) {
+        pool << '_';
+        break;
+      }
+      std::string_view::size_type j = i + 1;
+      if (j + 1 == len) {
+        pool << sv.substr(i);
+        break;
+      }
+      if (sv[j] == '{') {
+        ++j;
+      }
+      if (j == len) {
+        pool << sv.substr(i);
+        break;
+      }
+      while (sv[j] != ' ' && sv[j] != '}' && j < len) {
+        auto sup_it = latex_subscripts.find(sv[j]);
+        if (sup_it != latex_subscripts.end()) {
+          pool << sup_it->second;
+        } else {
+          pool << sv[j];
+        }
+        ++j;
+      }
+      i = j;
+      continue;
+    } else if (sv[i] == '^') {
+      if (i + 1 == len) {
+        pool << '^';
+        break;
+      }
+      std::string_view::size_type j = i + 1;
+      if (j + 1 == len) {
+        pool << sv.substr(i);
+        break;
+      }
+      if (sv[j] == '{') {
+        ++j;
+      }
+      if (j == len) {
+        pool << sv.substr(i);
+        break;
+      }
+      while (sv[j] != ' ' && sv[j] != '}' && j < len) {
+        auto sup_it = latex_superscripts.find(sv[j]);
+        if (sup_it != latex_superscripts.end()) {
+          pool << sup_it->second;
+        } else {
+          pool << sv[j];
+        }
+        ++j;
+      }
+      i = j;
+      continue;
+    } else if (sv[i] == '\\') {
+      if (i + 1 == len) {
+        pool << '\\';
+        break;
+      }
+      if (i + 2 == len) {
+        pool << sv.substr(i, 2);
+        break;
+      }
+      auto acc_it = latex_accents.find(sv.substr(i, 2));
+      if (acc_it != latex_accents.end()) {
+        auto trans_it = acc_it->second.find(sv[i + 2]);
+        if (trans_it != acc_it->second.end()) {
+          pool << trans_it->second;
           i += 2;
           continue;
         }
-      } else {
-        for (unsigned j = 0; j < sizeof(replace) / sizeof(char *); j += 2) {
-          replace_len = strlen(replace[j]);
-          if (sv.substr(i + 1, replace_len) == replace[j]) {
-            pool << replace[j + 1];
-            i += replace_len;
-            break;
-          }
-        }
+      }
+      auto esc_it = latex_escaped.find(sv[i + 1]);
+      if (esc_it != latex_escaped.end()) {
+        pool << esc_it->second;
+        i += 1;
         continue;
       }
-    } else if (sv[i] == '$') {
-      if (sv[i + 1] == '\\') {
-        pool << "&";
-        ++i;
-        while (sv[++i] != '$' && i < len) {
-          pool << sv[i];
-        }
-        pool << ";";
+      std::string_view::size_type j = i + 1;
+      while (sv[j] != ' ' && sv[j] != '$' && sv[j] != '}' && sv[j] != '\\' &&
+             j < len) {
+        ++j;
+      }
+      if (j == len) {
+        pool << sv.substr(i);
+        break;
+      }
+      auto sym_it = latex_symbols.find(sv.substr(i, j - i));
+      if (sym_it != latex_symbols.end()) {
+        pool << sym_it->second;
+        i = j;
         continue;
       }
-    } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~') {
+    } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~' ||
+               sv[i] == '$') {
       continue;
     }
     pool << sv[i];
@@ -213,7 +202,9 @@ std::string Encoding::HTMLEncode(std::string_view sv) {
   return (str);
 }
 
-std::string Encoding::HTML2XML(std::string html) {
+std::string Encoding::HTML2XML(std::string_view sv) {
+
+  std::string html(sv);
 
   std::string::size_type idx = 0;
   while ((idx = html.find("&", idx)) != std::string::npos) {
@@ -231,62 +222,6 @@ std::string Encoding::HTML2XML(std::string html) {
     while ((idx = html.find(escape[i], idx)) != std::string::npos) {
       html.replace(idx, 1, replace[i]);
       ++idx;
-    }
-  }
-
-  static constexpr const char *vowels = "aeiounAEIOUN",
-                              *accents[] = {"uml", "acute", "grave", "circ",
-                                            "tilde"};
-
-  size_t nvowels = strlen(vowels),
-         naccents = sizeof(accents) / sizeof(const char *);
-
-  //  "    '    `    o    ~
-  static constexpr int codes[12][5] = {{226, 225, 224, 229, 227},  // a
-                                       {234, 233, 232, 234, 160},  // e
-                                       {239, 237, 236, 238, 160},  // i
-                                       {246, 243, 242, 244, 245},  // o
-                                       {252, 250, 249, 251, 160},  // u
-                                       {160, 160, 160, 160, 241},  // n
-                                       {194, 193, 192, 143, 197},  // A
-                                       {203, 201, 200, 202, 160},  // E
-                                       {207, 205, 204, 206, 160},  // I
-                                       {214, 211, 210, 212, 213},  // O
-                                       {220, 218, 217, 219, 160},  // U
-                                       {160, 160, 160, 160, 209}}; // N
-
-  for (size_t i = 0; i < nvowels; i++) {
-    for (size_t j = 0; j < naccents; j++) {
-      idx = 0;
-      while (
-          (idx = html.find(std::string("&amp;") + vowels[i] + accents[j] + ";",
-                           idx)) != std::string::npos) {
-        html.replace(idx + 1, strlen(accents[j]) + 5,
-                     '#' + std::to_string(codes[i][j]));
-        ++idx;
-      }
-    }
-  }
-
-  std::array<std::string, 24> greek = {
-      "Alpha", "Beta",    "Gamma",    "Delta", "Epsilon", "Zeta",
-      "Eta",   "Theta",   "Iota",     "Kappa", "Lambda",  "Mu",
-      "Nu",    "Xi",      "Omnicron", "Pi",    "Rho",     "Sigma",
-      "Tau",   "Upsilon", "Phi",      "Chi",   "Psi",     "Omega"};
-
-  size_t ngreek = greek.size();
-  for (size_t i = 0; i < ngreek; i++) {
-    while ((idx = html.find(std::string("&amp;") + greek[i] + ';', idx)) !=
-           std::string::npos) {
-      html.replace(idx + 1, greek[i].length() + 4,
-                   "#" + std::to_string(913 + i));
-    }
-    greek[i][0] = (char)tolower(greek[i][0]);
-    idx = 0;
-    while ((idx = html.find(std::string("&amp;") + greek[i] + ';', idx)) !=
-           std::string::npos) {
-      html.replace(idx + 1, greek[i].length() + 4,
-                   "#" + std::to_string(913 + i + 32));
     }
   }
 

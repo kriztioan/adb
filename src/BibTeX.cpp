@@ -30,8 +30,7 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
       }
     }
     html += "<span title=\"Search for &apos;" + author + "&apos;\"><a href=\"";
-    html = html.append(self) +
-           "?action=search&match=" + Encoding::HTMLEncode(author) +
+    html = html.append(self) + "?action=search&match=" + author +
            "&scheme=author\">" + author + "</a></span>";
   };
 
@@ -239,7 +238,7 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, std::string_view &key) {
   ostr << "@" << type << "{";
   field_it = record[key];
   if (field_it != field_end) {
-    ostr << Encoding::LaTeXDecode(field_it->second);
+    ostr << field_it->second;
   }
 
   static constexpr std::string_view keywords[] = {

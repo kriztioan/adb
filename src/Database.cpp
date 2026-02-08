@@ -135,14 +135,14 @@ bool Database::RemoveRecord(std::string_view id_str) {
 void Database::SortRecords(std::string_view key, bool reverse) {
 
   if (!reverse) {
-    std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
-      return (Encoding::LaTeXDecode(r1.mFields[key]) <
-              Encoding::LaTeXDecode(r2.mFields[key]));
+    std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
+      return (Encoding::LaTeXDecode(r1.mFields[key], pool) <
+              Encoding::LaTeXDecode(r2.mFields[key], pool));
     });
   } else {
-    std::sort(vRecords.begin(), vRecords.end(), [key](Record &r1, Record &r2) {
-      return (Encoding::LaTeXDecode(r1.mFields[key]) >
-              Encoding::LaTeXDecode(r2.mFields[key]));
+    std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
+      return (Encoding::LaTeXDecode(r1.mFields[key], pool) >
+              Encoding::LaTeXDecode(r2.mFields[key], pool));
     });
   }
 };

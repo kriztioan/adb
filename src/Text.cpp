@@ -9,14 +9,14 @@
 
 #include "Text.h"
 
-bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
+bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   auto field_end = record.end();
 
   std::string authors;
   auto field_it = record["author"];
   if (field_it != field_end) {
-    authors = Encoding::LaTeXDecode(field_it->second);
+    authors = Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   std::string::size_type begin = 0, end;
@@ -30,20 +30,20 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
     std::string last, middle, first;
 
-    std::string::size_type idx = author.find(","), at;
-    if (idx != std::string::npos) {
-      last = author.substr(0, idx);
-      at = idx;
-      idx = author.find(",", idx + 1);
-      if (idx != std::string::npos) {
-        last = author.substr(0, idx);
-        at = idx;
+    std::string::size_type i = author.find(", "), j;
+    if (i != std::string::npos) {
+      last = author.substr(0, i);
+      j = i + 2;
+      i = author.find(", ", j);
+      if (i != std::string::npos) {
+        last = author.substr(0, i);
+        j = i + 2;
       }
-      idx = author.find(".", at);
-      if (idx != std::string::npos) {
-        first = author.substr(idx - 1, 2);
-        if (idx != author.length())
-          middle = author.substr(idx + 1);
+      i = author.find(".", j);
+      if (i != std::string::npos) {
+        first = author.substr(j, i - j + 1);
+        if (i != author.length())
+          middle = author.substr(i + 1);
       }
     } else {
       last = author;
@@ -77,20 +77,20 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
     std::string last, middle, first;
 
-    std::string::size_type idx = author.find(","), at;
-    if (idx != std::string::npos) {
-      last = author.substr(0, idx);
-      at = idx;
-      idx = author.find(",", idx + 1);
-      if (idx != std::string::npos) {
-        last = author.substr(0, idx);
-        at = idx;
+    std::string::size_type i = author.find(", "), j;
+    if (i != std::string::npos) {
+      last = author.substr(0, i);
+      j = i + 2;
+      i = author.find(", ", j);
+      if (i != std::string::npos) {
+        last = author.substr(0, i);
+        j = i + 2;
       }
-      idx = author.find(".", at);
-      if (idx != std::string::npos) {
-        first = author.substr(idx - 1, 2);
-        if (idx != author.length())
-          middle = author.substr(idx + 1);
+      i = author.find(".", j);
+      if (i != std::string::npos) {
+        first = author.substr(j, i - j + 1);
+        if (i != author.length())
+          middle = author.substr(i + 1);
       }
     } else {
       last = author;
@@ -120,7 +120,7 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
   field_it = record["title"];
   if (field_it != field_end) {
-    ostr << ", \"" << Encoding::LaTeXDecode(field_it->second) << "\"";
+    ostr << ", \"" << Encoding::LaTeXDecode(field_it->second, ctx.pool) << "\"";
   }
 
   std::string_view type;
@@ -133,10 +133,10 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
   if (type == "ARTICLE") {
     field_it = record["journal"];
     if (field_it != field_end) {
-      journal = Encoding::LaTeXDecode(field_it->second);
-      if (strings.mFields.size()) {
-        auto strings_it = strings[journal];
-        if (strings_it != strings.end()) {
+      journal = Encoding::LaTeXDecode(field_it->second, ctx.pool);
+      if (ctx.strings.mFields.size()) {
+        auto strings_it = ctx.strings[journal];
+        if (strings_it != ctx.strings.end()) {
           journal = strings_it->second;
         }
       }
@@ -152,31 +152,32 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
   if (type == "INPROCEEDINGS") {
     field_it = record["booktitle"];
     if (field_it != field_end) {
-      ostr << " in \"" << Encoding::LaTeXDecode(field_it->second) << "\"";
+      ostr << " in \"" << Encoding::LaTeXDecode(field_it->second, ctx.pool)
+           << "\"";
     }
 
     field_it = record["series"];
     if (field_it != field_end) {
-      ostr << ", " << Encoding::LaTeXDecode(field_it->second);
+      ostr << ", " << Encoding::LaTeXDecode(field_it->second, ctx.pool);
     }
   }
 
   field_it = record["year"];
   if (field_it != field_end) {
-    ostr << ", " << Encoding::LaTeXDecode(record.mFields["year"]);
+    ostr << ", " << Encoding::LaTeXDecode(record.mFields["year"], ctx.pool);
   }
 
   if (type == "BOOK" || type == "INPROCEEDINGS") {
     field_it = record["publisher"];
     if (field_it != field_end) {
-      ostr << ", " << Encoding::LaTeXDecode(field_it->second) << "\n";
+      ostr << ", " << Encoding::LaTeXDecode(field_it->second, ctx.pool) << "\n";
     }
   }
 
   std::string editors;
   field_it = record["editor"];
   if (field_it != field_end) {
-    editors = Encoding::LaTeXDecode(field_it->second);
+    editors = Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   std::string editor;
@@ -189,21 +190,20 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
       std::string last, middle, first;
 
-      std::string::size_type idx = editor.find(","), at;
-      if (idx != std::string::npos) {
-        last = editor.substr(0, idx);
-        at = idx;
-        idx = editor.find(",", idx + 1);
-        if (idx != std::string::npos) {
-          last = editor.substr(0, idx);
-          at = idx;
+      std::string::size_type i = editor.find(", "), j;
+      if (i != std::string::npos) {
+        last = editor.substr(0, i);
+        j = i + 2;
+        i = editor.find(", ", j);
+        if (i != std::string::npos) {
+          last = editor.substr(0, i);
+          j = i + 2;
         }
-        idx = editor.find(".", at);
-        if (idx != std::string::npos) {
-          first = editor.substr(idx - 1, 2);
-          at = idx;
-          if (idx != editor.length())
-            middle = editor.substr(idx + 1);
+        i = editor.find(".", j);
+        if (i != std::string::npos) {
+          first = editor.substr(j, i - j + 1);
+          if (i != editor.length())
+            middle = editor.substr(i + 1);
         }
       } else {
         last = editor;
@@ -236,21 +236,20 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
       std::string last, middle, first;
 
-      std::string::size_type idx = editor.find(","), at;
-      if (idx != std::string::npos) {
-        last = editor.substr(0, idx);
-        at = idx;
-        idx = editor.find(",", idx + 1);
-        if (idx != std::string::npos) {
-          last = editor.substr(0, idx);
-          at = idx;
+      std::string::size_type i = editor.find(", "), j;
+      if (i != std::string::npos) {
+        last = editor.substr(0, i);
+        j = i + 2;
+        i = editor.find(", ", j);
+        if (i != std::string::npos) {
+          last = editor.substr(0, i);
+          j = i + 2;
         }
-        idx = editor.find(".", at);
-        if (idx != std::string::npos) {
-          first = editor.substr(idx - 1, 2);
-          at = idx;
-          if (idx != editor.length())
-            middle = editor.substr(idx + 1);
+        i = editor.find(".", j);
+        if (i != std::string::npos) {
+          first = editor.substr(j, i - j + 1);
+          if (i != editor.length())
+            middle = editor.substr(i + 1);
         }
       } else {
         last = editor;
@@ -281,22 +280,22 @@ bool Text::Export(Record &record, std::ostream &ostr, Record &strings) {
 
   field_it = record["volume"];
   if (field_it != field_end) {
-    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   field_it = record["number"];
   if (field_it != field_end) {
-    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   field_it = record["pages"];
   if (field_it != field_end) {
-    ostr << ", " << Encoding::LaTeXDecode(field_it->second);
+    ostr << ", " << Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   field_it = record["doi"];
   if (field_it != field_end) {
-    ostr << " doi:" << Encoding::LaTeXDecode(field_it->second);
+    ostr << " doi:" << Encoding::LaTeXDecode(field_it->second, ctx.pool);
   }
 
   ostr << "\n\n";

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "Pool.h"
 #include "Record.h"
 #include "Uuid.h"
 
@@ -20,6 +21,7 @@ namespace MSWord {
 
 struct ExportContext {
   Record &strings;
+  Pool &pool;
   std::string_view &key;
 };
 

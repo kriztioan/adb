@@ -40,7 +40,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   std::string tag;
   field_it = record[ctx.key];
   if (field_it != field_end) {
-    tag = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
+    tag = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   UUID uuid;
@@ -62,12 +62,13 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["title"];
   if (field_it != field_end) {
     ostr << "\n<b:Title>"
-         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(
+                Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:Title>";
   }
   field_it = record["year"];
   if (field_it != field_end) {
-    ostr << "\n<b:Year>" << Encoding::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Year>" << Encoding::LaTeXDecode(field_it->second, ctx.pool)
          << "</b:Year>";
   }
   ostr << "\n<b:Author>"
@@ -77,7 +78,8 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   std::string authors;
   field_it = record["author"];
   if (field_it != field_end) {
-    authors = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
+    authors =
+        Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   std::string::size_type begin = 0, end;
@@ -89,20 +91,20 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
     std::string last, middle, first;
 
-    std::string::size_type idx = author.find(","), at;
-    if (idx != std::string::npos) {
-      last = author.substr(0, idx);
-      at = idx;
-      idx = author.find(",", idx + 1);
-      if (idx != std::string::npos) {
-        last = author.substr(0, idx);
-        at = idx;
+    std::string::size_type i = author.find(", "), j;
+    if (i != std::string::npos) {
+      last = author.substr(0, i);
+      j = i + 2;
+      i = author.find(", ", j);
+      if (i != std::string::npos) {
+        last = author.substr(0, i);
+        j = i + 2;
       }
-      idx = author.find(".", at);
-      if (idx != std::string::npos) {
-        first = author.substr(idx - 1, 2);
-        if (idx != author.length())
-          middle = author.substr(idx + 1);
+      i = author.find(".", j);
+      if (i != std::string::npos) {
+        first = author.substr(j, i - j + 1);
+        if (i != author.length())
+          middle = author.substr(i + 1);
       }
     } else {
       last = author;
@@ -127,20 +129,20 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
     std::string last, middle, first;
 
-    std::string::size_type idx = author.find(","), at;
-    if (idx != std::string::npos) {
-      last = author.substr(0, idx);
-      at = idx;
-      idx = author.find(",", idx + 1);
-      if (idx != std::string::npos) {
-        last = author.substr(0, idx);
-        at = idx;
+    std::string::size_type i = author.find(", "), j;
+    if (i != std::string::npos) {
+      last = author.substr(0, i);
+      j = i + 2;
+      i = author.find(", ", j);
+      if (i != std::string::npos) {
+        last = author.substr(0, i);
+        j = i + 2;
       }
-      idx = author.find(".", at);
-      if (idx != std::string::npos) {
-        first = author.substr(idx - 1, 2);
-        if (idx != author.length())
-          middle = author.substr(idx + 1);
+      i = author.find(".", j);
+      if (i != std::string::npos) {
+        first = author.substr(j, i - j + 1);
+        if (i != author.length())
+          middle = author.substr(i + 1);
       }
     } else {
       last = author;
@@ -165,7 +167,8 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   std::string editors;
   field_it = record["editor"];
   if (field_it != field_end) {
-    editors = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second));
+    editors =
+        Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   if (editors.length() != 0) {
@@ -181,21 +184,20 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
       std::string last, middle, first;
 
-      std::string::size_type idx = editor.find(","), at;
-      if (idx != std::string::npos) {
-        last = editor.substr(0, idx);
-        at = idx;
-        idx = editor.find(",", idx + 1);
-        if (idx != std::string::npos) {
-          last = editor.substr(0, idx);
-          at = idx;
+      std::string::size_type i = editor.find(", "), j;
+      if (i != std::string::npos) {
+        last = editor.substr(0, i);
+        j = i + 2;
+        i = editor.find(", ", j);
+        if (i != std::string::npos) {
+          last = editor.substr(0, i);
+          j = i + 2;
         }
-        idx = editor.find(".", at);
-        if (idx != std::string::npos) {
-          first = editor.substr(idx - 1, 2);
-          at = idx;
-          if (idx != editor.length())
-            middle = editor.substr(idx + 1);
+        i = editor.find(".", j);
+        if (i != std::string::npos) {
+          first = editor.substr(j, i - j + 1);
+          if (i != editor.length())
+            middle = editor.substr(i + 1);
         }
       } else {
         last = editor;
@@ -219,25 +221,25 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
       std::string last, middle, first;
 
-      std::string::size_type idx = editor.find(","), at;
-      if (idx != std::string::npos) {
-        last = editor.substr(0, idx);
-        at = idx;
-        idx = editor.find(",", idx + 1);
-        if (idx != std::string::npos) {
-          last = editor.substr(0, idx);
-          at = idx;
+      std::string::size_type i = editor.find(", "), j;
+      if (i != std::string::npos) {
+        last = editor.substr(0, i);
+        j = i + 2;
+        i = editor.find(", ", j);
+        if (i != std::string::npos) {
+          last = editor.substr(0, i);
+          j = i + 2;
         }
-        idx = editor.find(".", at);
-        if (idx != std::string::npos) {
-          first = editor.substr(idx - 1, 2);
-          at = idx;
-          if (idx != editor.length())
-            middle = editor.substr(idx + 1);
+        i = editor.find(".", j);
+        if (i != std::string::npos) {
+          first = editor.substr(j, i - j + 1);
+          if (i != editor.length())
+            middle = editor.substr(i + 1);
         }
       } else {
         last = editor;
       }
+
       ostr << "\n<b:Person>";
       if (!last.empty()) {
         ostr << "\n<b:Last>" << last << "</b:Last>";
@@ -257,13 +259,13 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   field_it = record["pages"];
   if (field_it != field_end) {
-    ostr << "\n<b:Pages>" << Encoding::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Pages>" << Encoding::LaTeXDecode(field_it->second, ctx.pool)
          << "</b:Pages>";
   }
 
   field_it = record["volume"];
   if (field_it != field_end) {
-    ostr << "\n<b:Volume>" << Encoding::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Volume>" << Encoding::LaTeXDecode(field_it->second, ctx.pool)
          << "</b:Volume>";
   }
 
@@ -278,7 +280,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
         }
       }
       ostr << "\n<b:JournalName>"
-           << Encoding::HTML2XML(Encoding::LaTeXDecode(journal))
+           << Encoding::HTML2XML(Encoding::LaTeXDecode(journal, ctx.pool))
            << "</b:JournalName>";
     }
   }
@@ -286,27 +288,30 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["booktitle"];
   if (field_it != field_end) {
     ostr << "\n<b:BookTitle>"
-         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(
+                Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:BookTitle>";
   }
 
   field_it = record["series"];
   if (field_it != field_end) {
     ostr << "\n<b:ConferenceName>"
-         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(
+                Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:ConferenceName>";
   }
 
   field_it = record["publisher"];
   if (field_it != field_end) {
     ostr << "\n<b:Publisher>"
-         << Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second))
+         << Encoding::HTML2XML(
+                Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:Publisher>";
   }
 
   field_it = record["month"];
   if (field_it != field_end) {
-    ostr << "\n<b:Month>" << Encoding::LaTeXDecode(field_it->second)
+    ostr << "\n<b:Month>" << Encoding::LaTeXDecode(field_it->second, ctx.pool)
          << "</b:Month>";
   }
 
@@ -317,7 +322,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
 void MSWord::Header(std::ostream &ostr) {
 
-  ostr << "<?xml version=\"1.0\"?>"
+  ostr << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
           "\n<b:Sources SelectedStyle=\"\" "
           "xmlns:b=\"http://schemas.openxmlformats.org/officeDocument/"
           "2006/"

@@ -10,11 +10,18 @@
 #pragma once
 
 #include "Encoding.h"
+#include "Pool.h"
 #include "Record.h"
+#include "Strings.h"
 
 #include <iostream>
 
 namespace Text {
 
-bool Export(Record &record, std::ostream &ostr, Record &strings);
+struct ExportContext {
+  Record &strings;
+  Pool &pool;
+};
+
+bool Export(Record &record, std::ostream &ostr, ExportContext &ctx);
 }; // namespace Text
