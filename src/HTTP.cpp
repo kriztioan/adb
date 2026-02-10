@@ -233,7 +233,7 @@ std::string HTTP::Get(std::string_view url,
 
   response.reserve(4096);
 
-  std::string buff;
+  std::vector<char> buff;
   buff.reserve(block_size);
 
   int bytes_recv;
@@ -268,7 +268,7 @@ std::string HTTP::SecureGet(std::string_view url,
 
   std::stringstream ss;
 
-  std::string buff;
+  std::vector<char> buff;
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
@@ -396,7 +396,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
 
   std::stringstream ss;
 
-  std::string buff;
+  std::vector<char> buff;
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());

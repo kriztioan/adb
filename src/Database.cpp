@@ -75,7 +75,7 @@ bool Database::Commit() {
   }
 
   ofstr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
-  for (auto &r : vRecords) {
+  for (const auto &r : vRecords) {
     auto f = r.mFields.begin();
     ofstr << f->first << '=' << Encoding::URLEncode(f->second);
     for (++f; f != r.mFields.end(); ++f) {
@@ -133,34 +133,29 @@ bool Database::RemoveRecord(std::string_view id_str) {
 }
 
 void Database::SortRecords(std::string_view key, bool reverse) {
-  if (!reverse) {
-    std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
-      auto field_it1 = r1[key];
-      if (field_it1 == r1.end()) {
-        return false;
-      }
-      auto field_it2 = r2[key];
-      if (field_it2 == r2.end()) {
-        return true;
-      }
-      return field_it1->second < field_it2->second;
-    });
-    return;
-  }
+  std::sort(vRecords.begin(), vRecords.end(),
+            [&](const Record &r1, const Record &r2) {
+              auto field_it1 = r1[key];
+              auto field_it2 = r2[key];
 
-  std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
-    auto field_it2 = r2[key];
-    if (field_it2 == r2.end()) {
-      return false;
-    }
+              if (field_it1 == r1.end() && field_it2 == r2.end()) {
+                return false;
+              }
 
-    auto field_it1 = r1[key];
-    if (field_it1 == r1.end()) {
-      return true;
-    }
+              if (field_it1 == r1.end()) {
+                return false;
+              }
 
-    return field_it1->second > field_it2->second;
-  });
+              if (field_it2 == r2.end()) {
+                return true;
+              }
+
+              if (!reverse) {
+                return field_it1->second < field_it2->second;
+              } else {
+                return field_it1->second > field_it2->second;
+              }
+            });
 }
 
 std::vector<std::string_view> Database::UniqueValuesForKey(
@@ -170,7 +165,7 @@ std::vector<std::string_view> Database::UniqueValuesForKey(
   std::vector<std::string_view> v;
   v.reserve(64);
 
-  for (auto &record : vRecords) {
+  for (const auto &record : vRecords) {
     auto field_it = record.mFields.find(key);
     if (field_it != record.mFields.end()) {
       std::vector<std::string_view> needles(func(field_it->second));
