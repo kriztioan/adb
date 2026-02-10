@@ -9,17 +9,17 @@
 
 #include "BibTeX.h"
 
-std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
-                                 std::string_view self) {
+std::string_view BibTeX::SplitAuthors(std::string_view authors,
+                                      std::string_view self, Pool &pool,
+                                      int max_authors) {
 
-  std::string html;
   if (authors.empty()) {
-    return (html);
+    return std::string_view();
   }
 
-  html.reserve(128);
+  pool.begin();
 
-  std::string::size_type beg = 0, end = authors.find(" and ");
+  std::string_view::size_type beg = 0, end = authors.find(" and ");
 
   auto output_author = [&]() {
     std::string author;
@@ -29,69 +29,60 @@ std::string BibTeX::SplitAuthors(std::string_view authors, int max_authors,
         author += c;
       }
     }
-    html += "<span title=\"Search for author &apos;" + author +
-            "&apos;\"><a href=\"";
-    html = html.append(self) + "?action=search&match=" + author +
-           "&scheme=author\">" + author + "</a></span>";
+    pool << "<span title=\"Search for author &apos;" << author
+         << "&apos;\"><a href=\"" << self << "?action=search&match=" << author
+         << "&scheme=author\">" << author << "</a></span>";
   };
 
   int nauthors = 1;
   output_author();
-  if (end != std::string::npos) {
+  if (end != std::string_view::npos) {
     while (nauthors < max_authors || max_authors == -1) {
       beg = end + 5;
       end = authors.find(" and ", beg);
-      html += ", ";
+      pool << ", ";
       output_author();
       ++nauthors;
-      if (end == std::string::npos) {
+      if (end == std::string_view::npos) {
         break;
       }
     }
-    if (nauthors == max_authors && end != std::string::npos) {
-      html += " <span class=\"etal\">et al.</span>";
+    if (nauthors == max_authors && end != std::string_view::npos) {
+      pool << " <span class=\"etal\">et al.</span>";
     }
   }
 
-  return (html);
+  return pool.sv();
 }
 
-std::string BibTeX::SplitKeywords(std::string_view keywords,
-                                  std::string_view self,
-                                  std::string_view separator) {
+std::string_view BibTeX::SplitKeywords(std::string_view keywords,
+                                       std::string_view self, Pool &pool,
+                                       std::string_view separator) {
 
-  std::string html;
   if (keywords.empty()) {
-    return (html);
+    return std::string_view();
   }
 
-  html.reserve(128);
+  pool.begin();
 
   std::string::size_type beg = 0, end = keywords.find(", ");
 
   auto output_keyword = [&]() {
-    std::string keyword;
-
-    for (const auto &c : keywords.substr(beg, end - beg)) {
-      if (c != '{' && c != '}') {
-        keyword += c;
-      }
-    }
-    html += "<span title=\"Search for keyword &apos;" + keyword +
-            "&apos;\"><a href=\"";
-    html = html.append(self) + "?action=search&match=" + keyword +
-           "&scheme=keywords\">" + keyword + "</a></span>";
+    std::string_view keyword(keywords.substr(beg, end - beg));
+    pool << "<span title=\"Search for keyword &apos;" << keyword
+         << "&apos;\"><a href=\"" << self << "?action=search&match=" << keyword
+         << "&scheme=keywords\">" << keyword << "</a></span>";
   };
 
   output_keyword();
-  while (end != std::string::npos) {
+  while (end != std::string_view::npos) {
     beg = end + 2;
     end = keywords.find(", ", beg);
-    html = html.append(separator);
+    pool << separator;
     output_keyword();
   }
 
-  return (html);
+  return pool.sv();
 }
 
 Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
@@ -112,9 +103,9 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
     ++nbytes_parsed;
   }
   if (nbytes_parsed >= bibtex.length())
-    return (Record{});
+    return Record{};
   else if (bibtex[nbytes_parsed] != '@')
-    return (Record{});
+    return Record{};
   ++nbytes_parsed;
 
   // part II
@@ -131,7 +122,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
     ++nbytes_parsed;
   }
   if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '{') {
-    return (Record{});
+    return Record{};
   }
   pool << "type=" << Encoding::URLEncode(buff.c_str())
        << "&ADSabstract=on&ADSfullpaper=on";
@@ -154,9 +145,9 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
   }
   if (nbytes_parsed >= bibtex.length() ||
       (bibtex[nbytes_parsed] != '}' && bibtex[nbytes_parsed] != ','))
-    return (Record{});
+    return Record{};
   else if (bibtex[nbytes_parsed] == '}') {
-    return (Record{});
+    return Record{};
   }
   pool << "&biblcode=" << Encoding::URLEncode(buff.c_str());
 
@@ -179,7 +170,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
       ++nbytes_parsed;
     }
     if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '=') {
-      return (Record{});
+      return Record{};
     }
     pool << '&' << Encoding::URLEncode(buff.c_str());
     buff.clear();
@@ -222,7 +213,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
     }
     if (nbytes_parsed >= bibtex.length() ||
         (bibtex[nbytes_parsed] != '}' && bibtex[nbytes_parsed] != ',')) {
-      return (Record{});
+      return Record{};
     } else if (bibtex[nbytes_parsed] == '}') {
       pairs = false;
     }
@@ -234,7 +225,7 @@ Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
   ++nbytes_parsed;
 
   pool << '\0';
-  return (Record(const_cast<char *>(pool.sv().data())));
+  return Record(const_cast<char *>(pool.sv().data()));
 }
 
 bool BibTeX::Export(Record &record, std::ostream &ostr, std::string_view &key) {
@@ -273,5 +264,5 @@ bool BibTeX::Export(Record &record, std::ostream &ostr, std::string_view &key) {
 
   ostr << "\n}\n\n";
 
-  return (true);
+  return true;
 }

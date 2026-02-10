@@ -15,11 +15,13 @@ HTTP::HTTP() {
     self = getenv("SCRIPT_NAME");
   }
 
-  if (getenv("REQUEST_URI") && getenv("QUERY_STRING")) {
+  if (getenv("REQUEST_URI")) {
     uri = Encoding::URLDecodeInplace(getenv("REQUEST_URI"));
-    if (!uri.empty() && uri.find('?') == std::string::npos) {
-      uri += "?";
-      uri += getenv("QUERY_STRING");
+    if (getenv("QUERY_STRING")) {
+      if (uri.find('?') == std::string::npos) {
+        uri += "?";
+        uri += getenv("QUERY_STRING");
+      }
     }
   }
 
@@ -124,30 +126,34 @@ std::string HTTP::Get(std::string_view url,
                       std::vector<std::string_view> headers, short port,
                       size_t block_size) {
 
+  std::string response;
+
   if (url.empty()) {
-    return (std::string());
+    return response;
   }
 
   struct protoent *protocol = getprotobyname("tcp");
   if (!protocol) {
-    return (std::string());
+    return response;
   }
   int sockfd = socket(AF_INET, SOCK_STREAM, protocol->p_proto);
   if (sockfd == -1) {
-    return (std::string());
+    return response;
   }
 
   int yes = 1;
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-    return (std::string());
+    return response;
   }
 
   int opt;
-  if ((opt = fcntl(sockfd, F_GETFL, NULL)) < 0)
-    return (NULL);
+  if ((opt = fcntl(sockfd, F_GETFL, NULL)) < 0) {
+    return response;
+  }
 
-  if (fcntl(sockfd, F_SETFL, opt | O_NONBLOCK) < 0)
-    return (NULL);
+  if (fcntl(sockfd, F_SETFL, opt | O_NONBLOCK) < 0) {
+    return response;
+  }
 
   struct sockaddr_in local, remote;
 
@@ -156,7 +162,7 @@ std::string HTTP::Get(std::string_view url,
   local.sin_addr.s_addr = htonl(INADDR_ANY);
   bzero(&local.sin_zero, 8);
   if (bind(sockfd, (struct sockaddr *)&local, sizeof(struct sockaddr)) == -1) {
-    return (std::string());
+    return response;
   }
 
   remote.sin_family = AF_INET;
@@ -164,11 +170,12 @@ std::string HTTP::Get(std::string_view url,
 
   std::string_view path(url.begin() + url.find_first_of('/'),
                         url.size() - url.find_first_of('/'));
+
   std::string hostname(url.begin(), url.find_first_of('/'));
 
-  struct hostent *remote_host = gethostbyname(hostname.data());
+  struct hostent *remote_host = gethostbyname(hostname.c_str());
   if (!remote_host) {
-    return (std::string());
+    return response;
   }
 
   bzero(&remote.sin_addr, sizeof(struct in_addr));
@@ -185,13 +192,14 @@ std::string HTTP::Get(std::string_view url,
       FD_SET(sockfd, &fdset);
       if (select(sockfd + 1, NULL, &fdset, NULL, &timeout) <= 0) {
         if (fcntl(sockfd, F_SETFL, opt) < 0)
-          return (NULL);
+          return response;
       }
     }
   }
 
-  if (fcntl(sockfd, F_SETFL, opt) < 0)
-    return (NULL);
+  if (fcntl(sockfd, F_SETFL, opt) < 0) {
+    return response;
+  }
 
   std::stringstream ss;
 
@@ -218,33 +226,39 @@ std::string HTTP::Get(std::string_view url,
     bytes_send = send(sockfd, bytes + total_bytes_send,
                       bytes_to_send - total_bytes_send, 0);
     if (bytes_send == -1) {
-      return (std::string());
+      return response;
     }
     total_bytes_send += bytes_send;
   }
 
-  std::string response, buff(block_size, '\0');
+  response.reserve(4096);
+
+  std::string buff;
+  buff.reserve(block_size);
 
   int bytes_recv;
   while ((bytes_recv = recv(sockfd, buff.data(), block_size, 0))) {
     if (bytes_recv == -1) {
-      return (std::string());
+      return response;
     }
     response.append(buff.data(), bytes_recv);
   }
-  return (response.substr(response.find("\r\n\r\n") + 4));
+  return response.substr(response.find("\r\n\r\n") + 4);
 }
 
 std::string HTTP::SecureGet(std::string_view url,
                             std::vector<std::string_view> headers, short port,
                             std::string_view pem, size_t block_size) {
 
+  std::string response;
+
   if (url.empty()) {
-    return (std::string());
+    return response;
   }
 
   std::string_view path(url.begin() + url.find_first_of('/'),
                         url.size() - url.find_first_of('/'));
+
   std::string hostname(url.begin(), url.find_first_of('/'));
 
   SSL_library_init();
@@ -253,12 +267,13 @@ std::string HTTP::SecureGet(std::string_view url,
                             .tv_usec = 0}; // TODO: Make user configurable
 
   std::stringstream ss;
-  std::string request, response, buff(block_size, '\0');
+
+  std::string buff;
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
     if (!ctx) {
-      return (std::string());
+      return response;
     }
 
     if (SSL_CTX_load_verify_locations(ctx, pem.data(), nullptr) != 1) {
@@ -329,11 +344,13 @@ std::string HTTP::SecureGet(std::string_view url,
   ss << "User-Agent: HTTP-Client/1.0\r\n"
      << "Connection: close\r\n\r\n";
 
-  request = ss.str();
-
-  if (BIO_puts(bio, request.c_str()) <= 0) {
+  if (BIO_puts(bio, ss.str().c_str()) <= 0) {
     goto fail;
   }
+
+  response.reserve(4096);
+
+  buff.reserve(block_size);
 
   int bytes_recv;
   while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
@@ -344,30 +361,32 @@ std::string HTTP::SecureGet(std::string_view url,
   }
 
   if (BIO_reset(bio) != 0) {
-    return (std::string());
+    return std::string();
   }
 
-  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
-                              : std::string());
+  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                             : std::string();
 
 fail:
   BIO_free_all(bio);
   bio = nullptr;
   SSL_CTX_free(ctx);
   ctx = nullptr;
-  return (std::string());
+  return response;
 }
 
 std::string HTTP::SecurePost(std::string_view url, std::string_view post,
                              std::vector<std::string_view> headers, short port,
                              std::string_view pem, size_t block_size) {
+  std::string response;
 
   if (url.empty()) {
-    return (std::string());
+    return response;
   }
 
   std::string_view path(url.begin() + url.find_first_of('/'),
                         url.size() - url.find_first_of('/'));
+
   std::string hostname(url.begin(), url.find_first_of('/'));
 
   SSL_library_init();
@@ -376,12 +395,13 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
                             .tv_usec = 0}; // TODO: Make user configurable
 
   std::stringstream ss;
-  std::string request, response, buff(block_size, '\0');
+
+  std::string buff;
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
     if (!ctx) {
-      return (std::string());
+      return response;
     }
 
     if (SSL_CTX_load_verify_locations(ctx, pem.data(), nullptr) != 1) {
@@ -398,6 +418,7 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
     if (!ssl) {
       goto fail;
     }
+
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
 
     SSL_set_tlsext_host_name(ssl, hostname.c_str());
@@ -454,51 +475,52 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
      << "Connection: close\r\n\r\n"
      << post;
 
-  request = ss.str();
-
-  if (BIO_puts(bio, request.c_str()) <= 0) {
+  if (BIO_puts(bio, ss.str().c_str()) <= 0) {
 
     goto fail;
   };
 
-  int bytes_recv;
+  response.reserve(4096);
 
+  buff.reserve(block_size);
+
+  int bytes_recv;
   while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
     if (bytes_recv == -1) {
-      return (std::string());
+      return std::string();
     }
     response.append(buff.data(), bytes_recv);
   }
 
   if (BIO_reset(bio) != 0) {
-    return (std::string());
+    return std::string();
   }
 
-  return (response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
-                              : std::string());
+  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                             : std::string();
 
 fail:
   BIO_free_all(bio);
   bio = nullptr;
   SSL_CTX_free(ctx);
   ctx = nullptr;
-  return (std::string());
+  return response;
 }
 
 int BIO_do_connect_timeout(BIO *bio, struct timeval *timeout) {
 
   while (true) {
     if (BIO_do_connect(bio) == 1) {
-      return (1);
+      return 1;
     }
 
     if (!BIO_should_retry(bio)) {
-      return (-1);
+      return -1;
     }
 
     int fd = BIO_get_fd(bio, NULL);
     if (fd == -1) {
-      return (-1);
+      return -1;
     }
 
     fd_set rdfds, wrfds;
@@ -514,8 +536,8 @@ int BIO_do_connect_timeout(BIO *bio, struct timeval *timeout) {
     }
 
     if (select(fd + 1, &rdfds, &wrfds, NULL, timeout) <= 0) {
-      return (-1);
+      return -1;
     }
   }
-  return (1);
+  return 1;
 }

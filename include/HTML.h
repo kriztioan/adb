@@ -19,8 +19,6 @@ namespace HTML {
 std::string Select(std::string_view options, std::string_view selected,
                    std::string_view name, std::string_view onchange);
 
-std::string Highlight(std::string_view body, std::string_view match);
-
 std::string Filesize(std::filesystem::path &f);
 
 }; // namespace HTML

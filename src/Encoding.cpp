@@ -63,7 +63,7 @@ std::string Encoding::URLEncode(std::string_view sv) {
       }
     }
   }
-  return (str);
+  return str;
 }
 
 std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
@@ -174,7 +174,7 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
     pool << sv[i];
   }
 
-  return (pool.sv());
+  return pool.sv();
 }
 
 std::string Encoding::HTMLEncode(std::string_view sv) {
@@ -199,7 +199,7 @@ std::string Encoding::HTMLEncode(std::string_view sv) {
     }
   }
 
-  return (str);
+  return str;
 }
 
 std::string Encoding::HTML2XML(std::string_view sv) {
@@ -225,5 +225,5 @@ std::string Encoding::HTML2XML(std::string_view sv) {
     }
   }
 
-  return (html);
+  return html;
 }

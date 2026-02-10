@@ -26,10 +26,10 @@ public:
   void Parse(char *data);
 
   inline auto operator[](std::string_view key) const {
-    return (mFields.find(key));
+    return mFields.find(key);
   }
 
-  auto end() const { return (mFields.end()); }
+  auto end() const { return mFields.end(); }
 
   std::unordered_map<std::string_view, std::string_view> mFields;
 };

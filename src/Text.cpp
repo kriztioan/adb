@@ -21,14 +21,14 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   std::string::size_type begin = 0, end;
 
-  bool had_first = false;
+  bool first = true;
 
   std::string author;
   while ((end = authors.find(" and ", begin)) != std::string::npos) {
     author = authors.substr(begin, end - begin);
     begin = end + 5;
 
-    std::string last, middle, first;
+    std::string last, middle, given;
 
     std::string::size_type i = author.find(", "), j;
     if (i != std::string::npos) {
@@ -41,7 +41,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       }
       i = author.find(".", j);
       if (i != std::string::npos) {
-        first = author.substr(j, i - j + 1);
+        given = author.substr(j, i - j + 1);
         if (i != author.length())
           middle = author.substr(i + 1);
       }
@@ -50,21 +50,21 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
     }
 
     if (!last.empty()) {
-      if (had_first) {
-        ostr << ", ";
+      if (!first) {
+        ostr << ", " << last;
       } else {
-        had_first = true;
+        ostr << last;
+        first = false;
       }
-      ostr << last;
     }
 
-    if (!first.empty()) {
-      if (!last.empty() || had_first) {
-        ostr << ", ";
+    if (!given.empty()) {
+      if (!last.empty() || !first) {
+        ostr << ", " << given;
       } else {
-        had_first = true;
+        ostr << given;
+        first = true;
       }
-      ostr << first;
       if (!middle.empty()) {
         ostr << middle;
       }
@@ -75,7 +75,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
     author = authors.substr(begin);
 
-    std::string last, middle, first;
+    std::string last, middle, given;
 
     std::string::size_type i = author.find(", "), j;
     if (i != std::string::npos) {
@@ -88,7 +88,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       }
       i = author.find(".", j);
       if (i != std::string::npos) {
-        first = author.substr(j, i - j + 1);
+        given = author.substr(j, i - j + 1);
         if (i != author.length())
           middle = author.substr(i + 1);
       }
@@ -97,21 +97,21 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
     }
 
     if (!last.empty()) {
-      if (had_first) {
-        ostr << ", ";
+      if (!first) {
+        ostr << ", " << last;
       } else {
-        had_first = true;
+        ostr << last;
+        first = false;
       }
-      ostr << last;
     }
 
-    if (!first.empty()) {
-      if (!last.empty() || had_first) {
-        ostr << ", ";
+    if (!given.empty()) {
+      if (!last.empty() || !first) {
+        ostr << ", " << given;
       } else {
-        had_first = true;
+        ostr << given;
+        first = false;
       }
-      ostr << first;
       if (!middle.empty()) {
         ostr << middle;
       }
@@ -182,13 +182,13 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   std::string editor;
   if (!editors.empty()) {
-    had_first = false;
+    first = true;
     begin = 0;
     while ((end = editors.find(" and ", begin)) != std::string::npos) {
       editor = editors.substr(begin, end - begin);
       begin = end + 5;
 
-      std::string last, middle, first;
+      std::string last, middle, given;
 
       std::string::size_type i = editor.find(", "), j;
       if (i != std::string::npos) {
@@ -201,7 +201,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
         }
         i = editor.find(".", j);
         if (i != std::string::npos) {
-          first = editor.substr(j, i - j + 1);
+          given = editor.substr(j, i - j + 1);
           if (i != editor.length())
             middle = editor.substr(i + 1);
         }
@@ -211,20 +211,22 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
       if (!last.empty()) {
         ostr << ", ";
-        if (!had_first) {
+        if (!first) {
+          ostr << last;
+        } else {
           ostr << "eds. ";
-          had_first = true;
+          first = false;
         }
-        ostr << last;
       }
 
-      if (!first.empty()) {
+      if (!given.empty()) {
         ostr << ", ";
-        if (!had_first) {
+        if (!first) {
+          ostr << first;
+        } else {
           ostr << "eds. ";
-          had_first = true;
+          first = false;
         }
-        ostr << first;
         if (!middle.empty()) {
           ostr << middle;
         }
@@ -234,7 +236,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
     if (!editors.empty()) {
       editor = editors.substr(begin);
 
-      std::string last, middle, first;
+      std::string last, middle, given;
 
       std::string::size_type i = editor.find(", "), j;
       if (i != std::string::npos) {
@@ -247,7 +249,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
         }
         i = editor.find(".", j);
         if (i != std::string::npos) {
-          first = editor.substr(j, i - j + 1);
+          given = editor.substr(j, i - j + 1);
           if (i != editor.length())
             middle = editor.substr(i + 1);
         }
@@ -257,20 +259,22 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
       if (!last.empty()) {
         ostr << ", ";
-        if (!had_first) {
+        if (!first) {
+          ostr << last;
+        } else {
           ostr << "eds. ";
-          had_first = true;
+          first = false;
         }
-        ostr << last;
       }
 
-      if (!first.empty()) {
+      if (!given.empty()) {
         ostr << ", ";
-        if (!had_first) {
+        if (!first) {
+          ostr << first;
+        } else {
           ostr << "eds. ";
-          had_first = true;
+          first = true;
         }
-        ostr << first;
         if (!middle.empty()) {
           ostr << middle;
         }
@@ -300,5 +304,5 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   ostr << "\n\n";
 
-  return (true);
+  return true;
 }

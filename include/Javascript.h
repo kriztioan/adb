@@ -8,11 +8,12 @@
  ***********************************************/
 
 #pragma once
+#include "Pool.h"
 
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace Javascript {
 
-std::string Array(std::vector<std::string> &v);
+std::string_view Array(std::vector<std::string_view> &v, Pool &pool);
 }; // namespace Javascript

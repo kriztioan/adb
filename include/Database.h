@@ -17,7 +17,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <string>
 #include <string_view>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -29,7 +28,7 @@ public:
   Database(const std::filesystem::path &f, Pool &pool);
   ~Database();
 
-  bool Good() { return (state); }
+  bool Good() { return state; }
 
   bool Commit();
 
@@ -44,21 +43,21 @@ public:
     for (auto &r : vRecords) {
       if (r.mFields.at("id") == id_str) {
         if (!parser(r, ostr, userdata)) {
-          return (false);
+          return false;
         }
-        return (true);
+        return true;
       }
     }
-    return (false);
+    return false;
   }
 
   bool
   ReindexRecords(const std::function<bool(Record &record, long id)> &process);
 
   void SortRecords(std::string_view key, bool reverse = false);
-  std::vector<std::string>
+  std::vector<std::string_view>
   UniqueValuesForKey(std::string_view key,
-                     std::vector<std::string> (*func)(std::string_view));
+                     std::vector<std::string_view> (*func)(std::string_view));
   std::vector<std::vector<Record>> DuplicateRecordsForKey(std::string_view key);
 
   std::vector<Record> vRecords;

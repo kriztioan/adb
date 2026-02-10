@@ -9,24 +9,26 @@
 
 #include "Actions.h"
 
-Pool pool(1L << 19); // 1M
+Pool pool(1L << 21); // 4M
 
 std::stringstream sout;
 
-std::string list_themes(std::filesystem::path &directory) {
-  std::string files;
-  files.reserve(12);
+std::string_view list_themes(std::filesystem::path &directory) {
+  pool.begin();
   if (std::filesystem::is_directory(directory)) {
+    bool first = true;
     for (const auto &p : std::filesystem::directory_iterator(directory)) {
       if (p.path().extension() == ".css") {
-        if (!files.empty()) {
-          files += '&';
+        if (first) {
+          pool << p.path().stem().string();
+          first = false;
+          continue;
         }
-        files += p.path().stem();
+        pool << '&' << p.path().stem().string();
       }
     }
   }
-  return (files);
+  return pool.sv();
 }
 
 void WriteHTMLHeader(Preferences &prefs) {
@@ -136,15 +138,13 @@ void DisplayToolsForm(HTTP &http, [[maybe_unused]] Preferences &prefs) {
 void DisplayData(HTTP &http, Preferences &prefs, Record &record,
                  Record &strings) {
 
-  static std::string_view baseurl, adsurl, doiurl;
+  static std::string_view baseurl, adsurl, doiurl, search;
 
   static std::filesystem::path base_path;
 
   static int nauthors = -1;
 
   static bool initialized = false, table = false;
-
-  static std::string search;
 
   if (!initialized) {
 
@@ -186,13 +186,13 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
 
     auto get_it = http.get["match"];
     if (get_it != get_end) {
-      search = "&match=";
-      search.append(get_it->second);
+      pool.begin();
+      pool << "&match=" << get_it->second;
       get_it = http.get["scheme"];
       if (get_it != get_end) {
-        search += "&scheme=";
-        search.append(get_it->second);
+        pool << "&scheme=" << get_it->second;
       }
+      search = pool.sv();
     }
 
     initialized = true;
@@ -214,7 +214,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     ADScode = record_it->second;
   }
 
-  std::string Title;
+  std::string_view Title;
   record_it = record["title"];
   if (record_it != record_end) {
     Title = Encoding::LaTeXDecode(record_it->second, pool);
@@ -227,20 +227,22 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     }
   }
 
-  std::string Authors;
+  std::string_view Authors;
   record_it = record["author"];
   if (record_it != record_end) {
-    Authors = BibTeX::SplitAuthors(
-        Encoding::LaTeXDecode(record_it->second, pool), nauthors, http.self);
+    Authors =
+        BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
+                             http.self, pool, nauthors);
   } else {
     record_it = record["editor"];
     if (record_it != record_end) {
-      Authors = BibTeX::SplitAuthors(
-          Encoding::LaTeXDecode(record_it->second, pool), nauthors, http.self);
+      Authors =
+          BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
+                               http.self, pool, nauthors);
     }
   }
 
-  std::string Journal;
+  std::string_view Journal;
   record_it = record["type"];
   if (record_it != record_end && record_it->second == "PHDTHESIS") {
     Journal = "PhD Thesis";
@@ -331,7 +333,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
     }
     record_it = record["doi"];
     if (record_it != record_end) {
-      std::string doi(Encoding::LaTeXDecode(record_it->second, pool));
+      std::string_view doi(Encoding::LaTeXDecode(record_it->second, pool));
       sout << " <a href=\"https://" << doiurl << "/" << doi << "\">" << doi
            << "</a>";
     }
@@ -344,7 +346,8 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   if (record_it != record_end) {
     sout << "      "
          << BibTeX::SplitKeywords(
-                Encoding::LaTeXDecode(record_it->second, pool), http.self);
+                Encoding::LaTeXDecode(record_it->second, pool), http.self,
+                pool);
   }
   sout << "\n    </td>\n"
           "    <td>\n";
@@ -446,8 +449,8 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
       srt = "&reverse=true";
     }
     d.SortRecords(sortby, reverse);
-    std::string::size_type p = http.uri.find("&sortby=");
-    if (p != std::string::npos) {
+    std::string_view::size_type p = http.uri.find("&sortby=");
+    if (p != std::string_view::npos) {
       http.uri = http.uri.substr(0, p);
     }
   }
@@ -557,10 +560,10 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
     if (scheme == "any") {
       for (auto &record : d.vRecords) {
         for (const auto &field : record.mFields) {
-          std::string v(Encoding::LaTeXDecode(field.second, pool));
+          std::string_view v(Encoding::LaTeXDecode(field.second, pool));
           if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                           [](const char &c1, const char &c2) {
-                            return (toupper(c1) == toupper(c2));
+                            return toupper(c1) == toupper(c2);
                           }) != v.end()) {
             DisplayData(http, prefs, record, strings.strings);
             ++n_records;
@@ -571,11 +574,11 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
     } else if (scheme == "author" && search[0] == '^') {
       search = search.substr(1);
       auto helper = [](std::string_view authors) -> std::string_view {
-        std::string::size_type p = authors.find(" and ");
-        if (p != std::string::npos) {
-          return (authors.substr(0, p));
+        std::string_view::size_type p = authors.find(" and ");
+        if (p != std::string_view::npos) {
+          return authors.substr(0, p);
         } else {
-          return (authors);
+          return authors;
         }
       };
       for (auto &record : d.vRecords) {
@@ -585,10 +588,11 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
         if (record_it == record_end) {
           continue;
         }
-        std::string v(helper(Encoding::LaTeXDecode(record_it->second, pool)));
+        std::string_view v(
+            helper(Encoding::LaTeXDecode(record_it->second, pool)));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
-                          return (toupper(c1) == toupper(c2));
+                          return toupper(c1) == toupper(c2);
                         }) != v.end()) {
           DisplayData(http, prefs, record, strings.strings);
           ++n_records;
@@ -602,10 +606,10 @@ void DisplayDataList(HTTP &http, Preferences &prefs) {
         if (record_it == record_end) {
           continue;
         }
-        std::string v(Encoding::LaTeXDecode(record_it->second, pool));
+        std::string_view v(Encoding::LaTeXDecode(record_it->second, pool));
         if (std::search(v.begin(), v.end(), search.begin(), search.end(),
                         [](const char &c1, const char &c2) {
-                          return (toupper(c1) == toupper(c2));
+                          return toupper(c1) == toupper(c2);
                         }) != v.end()) {
           DisplayData(http, prefs, record, strings.strings);
           ++n_records;
@@ -697,25 +701,29 @@ void WriteHTMLFooter() {
 
 void WriteOutput() { std::cout << sout.rdbuf(); }
 
-void DisplayMenu(HTTP &http, Preferences &prefs) {
+void DisplayMenu(HTTP &http, [[maybe_unused]] Preferences &prefs) {
 
   const std::string_view options("any&author&keywords&comments&title");
 
-  auto prefs_end = prefs.end();
-
-  std::string newVersion, scheme;
-  auto prefs_it = prefs["updates"];
-  if (prefs_it != prefs_end && prefs_it->second == "true") {
-    std::string latest = HTTP::Get(UPDATE_URL);
-    if (latest != CURR_VERSION) {
-      newVersion = " <button title=\"Update AdB to " + latest +
-                   "\" type=\"button\" onclick=\"openWindow('" + http.self +
-                   "?action=versionupdate', 500, 700)\">Update</button>";
-    }
-  }
+  // auto prefs_end = prefs.end();
+  //
+  // std::string_view new_version;
+  // auto prefs_it = prefs["updates"];
+  // if (prefs_it != prefs_end && prefs_it->second == "true") {
+  //   std::string latest = HTTP::Get(UPDATE_URL);
+  //   if (latest != CURR_VERSION) {
+  //     pool.begin()
+  //     pool << " <button title=\"Update AdB to " << latest <<
+  //                  "\" type=\"button\" onclick=\"openWindow('" << http.self
+  //                  <<
+  //                  "?action=versionupdate', 500, 700)\">Update</button>";
+  //     new_version = pool.sv();
+  //   }
+  // }
 
   auto get_end = http.get.end();
 
+  std::string_view scheme;
   auto get_it = http.get["scheme"];
   if (get_it != get_end) {
     scheme = get_it->second;
@@ -748,7 +756,7 @@ void DisplayMenu(HTTP &http, Preferences &prefs) {
        << "?action=info')\">Info</button>" /* <button id= \"logout\"
        " "title=\"Logout\" type=\"button\" onclick=\"gotoURL('"
        << http.self << "?action=logout')\">Logout</button>" <<
-       newVersion << "\n" */
+       new_version << "\n" */
           "    </td>\n"
           "    <td id=\"col2\">\n"
           "      <input type=\"hidden\" name=\"action\" value=\"search\"/>\n"
@@ -848,16 +856,16 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
 
   auto get_end = http.get.end();
 
-  std::string search;
+  std::string_view search;
   auto get_it = http.get["match"];
   if (get_it != get_end) {
-    search = "&match=";
-    search.append(get_it->second);
+    pool.begin();
+    pool << "&match=" << get_it->second;
     get_it = http.get["scheme"];
     if (get_it != get_end) {
-      search += "&scheme=";
-      search.append(get_it->second);
+      pool << "&scheme=" << get_it->second;
     }
+    search = pool.sv();
   }
 
   std::string_view id_str;
@@ -868,7 +876,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     id_str = "-1";
   }
 
-  std::string id, prev_id, next_id;
+  std::string_view id, prev_id, next_id;
 
   auto records_end = d.vRecords.end();
 
@@ -899,19 +907,18 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     return;
   }
 
-  std::string ADScode;
+  std::string_view ADScode;
   auto field_it = (*record_it)["ADScode"];
   if (field_it != field_end) {
     ADScode = field_it->second;
   }
 
-  std::string Booktitle;
+  std::string_view Booktitle;
   field_it = (*record_it)["booktitle"];
   if (field_it != field_end) {
     Booktitle = Encoding::LaTeXDecode(field_it->second, pool);
   }
-
-  std::string Title;
+  std::string_view Title;
   field_it = (*record_it)["title"];
   if (field_it != field_end) {
     Title = Encoding::LaTeXDecode(field_it->second, pool);
@@ -921,39 +928,20 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
     Title = "No title";
   }
 
-  std::string Comments;
-  field_it = (*record_it)["comments"];
-  if (field_it != field_end) {
-    std::string comments(Encoding::LaTeXDecode(field_it->second, pool));
-    Comments =
-        "      <span title=\"" + comments + "\"><img class=\"comments\" src=\"";
-    Comments = Comments.append(baseurl) +
-               "images/available.gif\" alt=\"Available\" /> </span> " +
-               comments;
-  }
-
-  std::string Keywords;
-  field_it = (*record_it)["keywords"];
-  if (field_it != field_end) {
-    Keywords = BibTeX::SplitKeywords(
-        Encoding::LaTeXDecode(field_it->second, pool), http.self, " – ");
-  }
-
-  std::string Authors;
+  std::string_view Authors;
   field_it = (*record_it)["author"];
   if (field_it != field_end) {
     Authors = BibTeX::SplitAuthors(
-        Encoding::LaTeXDecode(field_it->second, pool), -1, http.self);
+        Encoding::LaTeXDecode(field_it->second, pool), http.self, pool);
   } else {
     field_it = (*record_it)["editor"];
     if (field_it != field_end) {
       Authors = BibTeX::SplitAuthors(
-          Encoding::LaTeXDecode(field_it->second, pool), -1, http.self);
+          Encoding::LaTeXDecode(field_it->second, pool), http.self, pool);
     }
   }
 
-  std::string Journal;
-
+  std::string_view Journal;
   field_it = (*record_it)["type"];
   if (field_it != field_end && field_it->second == "PHDTHESIS") {
     Journal = "PhD Thesis";
@@ -969,21 +957,11 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           Journal = strings_it->second;
         }
       }
+    } else if (!Booktitle.empty()) {
+      Journal = Booktitle;
     } else {
-      if (!Booktitle.empty()) {
-        Journal = Booktitle;
-      } else {
-        Journal = "No journal";
-      }
+      Journal = "No journal";
     }
-  }
-
-  if (!search.empty()) {
-    Keywords = HTML::Highlight(Keywords, search);
-    Authors = HTML::Highlight(Authors, search);
-    Comments = HTML::Highlight(Comments, search);
-    Title = HTML::Highlight(Title, search);
-    Booktitle = HTML::Highlight(Booktitle, search);
   }
 
   sout << "<table class=\"layout record\">\n"
@@ -1046,7 +1024,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   field_it = (*record_it)["doi"];
   if (field_it != field_end) {
     sout << "<a href=\"https://";
-    std::string doi(Encoding::LaTeXDecode(field_it->second, pool));
+    std::string_view doi(Encoding::LaTeXDecode(field_it->second, pool));
     prefs_it = prefs["doiurl"];
     if (prefs_it != prefs_end) {
       sout << prefs_it->second;
@@ -1071,8 +1049,13 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           "  </tr>\n"
           "  <tr>\n"
           "    <td>\n"
-          "      <span id=\"keywords\">"
-       << Keywords << "      </span> <span ";
+          "      <span id=\"keywords\">";
+  field_it = (*record_it)["keywords"];
+  if (field_it != field_end) {
+    sout << BibTeX::SplitKeywords(Encoding::LaTeXDecode(field_it->second, pool),
+                                  http.self, pool, " – ");
+  }
+  sout << "      </span> <span ";
   field_it = (*record_it)["biblcode"];
   if (field_it != field_end) {
     sout << "id=\"Biblcode\"><b>Bibl. Code</b>: " << field_it->second;
@@ -1138,9 +1121,15 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           "  <tr>\n"
           "    <td>\n"
           "      <p id=\"comments\">\n"
-          "        "
-       << Comments
-       << "\n"
+          "        ";
+  field_it = (*record_it)["comments"];
+  if (field_it != field_end) {
+    std::string_view comments(Encoding::LaTeXDecode(field_it->second, pool));
+    sout << "      <span title=\"" << comments
+         << "\"><img class=\"comments\" src=\"" << baseurl
+         << "images/available.gif\" alt=\"Available\" /> </span> " << comments;
+  }
+  sout << "\n"
           "      </p>\n"
           "    </td>\n"
           "  </tr>\n"
@@ -1168,12 +1157,12 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           "</table>\n";
 }
 
-std::vector<std::string> split_on_comma(std::string_view sv) {
+std::vector<std::string_view> split_on_comma(std::string_view sv) {
 
-  std::vector<std::string> v;
+  std::vector<std::string_view> v;
 
   if (sv.empty()) {
-    return (v);
+    return v;
   }
 
   size_t b = 0, e = 0;
@@ -1199,12 +1188,12 @@ std::vector<std::string> split_on_comma(std::string_view sv) {
     v.emplace_back(Encoding::LaTeXDecode(std::string_view(q + b, e - b), pool));
   }
 
-  return (v);
+  return v;
 }
 
-std::vector<std::string> split_on_and(std::string_view sv) {
+std::vector<std::string_view> split_on_and(std::string_view sv) {
 
-  std::vector<std::string> v;
+  std::vector<std::string_view> v;
 
   const char *b = sv.data(), *e;
 
@@ -1221,7 +1210,7 @@ std::vector<std::string> split_on_and(std::string_view sv) {
     v.emplace_back(Encoding::LaTeXDecode(std::string_view(b, b_len), pool));
   }
 
-  return (v);
+  return v;
 }
 
 void DisplayRecordForm(HTTP &http, Preferences &prefs) {
@@ -1234,7 +1223,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
     id_str = get_it->second;
   }
 
-  std::string search;
+  std::string_view search;
   get_it = http.get["match"];
   if (get_it != get_end) {
     search = get_it->second;
@@ -1244,11 +1233,11 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   get_it = http.get["scheme"];
   if (get_it != get_end) {
     scheme = get_it->second;
-  }
-
-  if (!search.empty()) {
-    search = "&match=" + search + "&scheme=";
-    search.append(scheme);
+    if (!search.empty()) {
+      pool.begin();
+      pool << "&match=" << search << "&scheme=" << scheme;
+      search = pool.sv();
+    }
   }
 
   auto prefs_end = prefs.end();
@@ -1270,22 +1259,10 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   }
 
   Record *record_it;
-
-  std::string query_ads, query_doi;
   if (id_str != "-1") {
     record_it = &(*d.GetRecord(id_str));
   } else {
     record_it = &(http.post);
-    query_ads = " <button id=\"adsquery\" title=\"Query\" type=\"button\" "
-                "onclick=\"document.record.action='" +
-                http.self +
-                "?action=queryADS&id=-1';document.record.submit();\">Query "
-                "ADS</button> ";
-    query_doi = " <button id=\"doiquery\" title=\"Query\" type=\"button\" "
-                "onclick=\"document.record.action='" +
-                http.self +
-                "?action=queryDOI&id=-1';document.record.submit();\">Query "
-                "DOI</button> ";
   }
 
   auto field_end = record_it->end();
@@ -1304,7 +1281,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
 
   auto uniq = d.UniqueValuesForKey("keywords", split_on_comma);
 
-  std::string JSArray(Javascript::Array(uniq));
+  std::string_view JSArray(Javascript::Array(uniq, pool));
 
   sout << "<script type=\"text/javascript\">\n"
           "\n"
@@ -1378,8 +1355,15 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   if (field_it != field_end) {
     sout << Encoding::HTMLEncode(field_it->second);
   }
-  sout << "\" />" << query_ads
-       << "\n"
+  sout << "\" />";
+  if (id_str == "-1") {
+    sout << " <button id=\"adsquery\" title=\"Query\" type=\"button\" "
+            "onclick=\"document.record.action='"
+         << http.self
+         << "?action=queryADS&id=-1';document.record.submit();\">Query "
+            "ADS</button> ";
+  }
+  sout << "\n"
           "    </td>\n"
           "  </tr>\n"
           "  <tr>\n"
@@ -1394,8 +1378,15 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   if (field_it != field_end) {
     sout << Encoding::HTMLEncode(field_it->second);
   }
-  sout << "\" />" << query_doi
-       << "\n"
+  sout << "\" />";
+  if (id_str == "-1") {
+    sout << " <button id=\"doiquery\" title=\"Query\" type=\"button\" "
+            "onclick=\"document.record.action='"
+         << http.self
+         << "?action=queryDOI&id=-1';document.record.submit();\">Query "
+            "DOI</button> ";
+  }
+  sout << "\n"
           "    </td>\n"
           "  </tr>\n"
           "  <tr>\n"
@@ -2004,20 +1995,22 @@ void Update(HTTP &http, Preferences &prefs) {
   post_it = http.post["archive"];
   if (post_it != post_end && post_it->second == "on") {
     if (http.file_data.empty() && !std::filesystem::exists(TargetPath)) {
-      std::string command(base_path.string() + "csh/AdBArchiver.csh " +
-                          base_path.string() + " " + "'https://");
+      pool.begin();
+      pool << base_path.string() << "csh/AdBArchiver.csh " << base_path.string()
+           << " 'https://";
       prefs_it = prefs["adsurl"];
       if (prefs_it != prefs_end) {
-        command = command.append(prefs_it->second);
+        pool << prefs_it->second;
       }
-      command += "/pdf/";
+      pool << "/pdf/";
       prefs_it = prefs["AScode"];
       if (prefs_it != prefs_end) {
-        command = command.append(prefs_it->second);
+        pool << prefs_it->second;
       }
-      command += "' " + TargetPath.string();
+      pool << "' " << TargetPath.string() << "'\0";
 
-      if (system(command.c_str()) == -1) {
+      std::string_view cmd = pool.sv();
+      if (system(cmd.data()) == -1) {
         return;
       }
 
@@ -2045,11 +2038,9 @@ void Update(HTTP &http, Preferences &prefs) {
 
 void QueryADS(HTTP &http, Preferences &prefs) {
 
-  auto post_end = http.post.end();
-
   std::string_view ADScode;
   auto post_it = http.post["ADScode"];
-  if (post_it != post_end) {
+  if (post_it != http.post.end()) {
     ADScode = post_it->second;
   }
 
@@ -2067,13 +2058,15 @@ void QueryADS(HTTP &http, Preferences &prefs) {
     pem = prefs_it->second;
   }
 
-  std::string post("{\"bibcode\":[\"");
-  post = post.append(ADScode) + "\"]}";
+  pool.begin();
+  pool << "{\"bibcode\":[\"" << ADScode << "\"]}";
+  std::string_view post = pool.sv();
 
-  std::string authorization("Authorization: Bearer ");
-  authorization.append(adstoken);
+  pool.begin();
+  pool << "Authorization: Bearer " << adstoken;
+  std::string_view authorization = pool.sv();
 
-  std::string content_type("Content-Type: application/json");
+  std::string_view content_type("Content-Type: application/json");
 
   std::vector<std::string_view> headers = {authorization, content_type};
 
@@ -2107,12 +2100,13 @@ void QueryDOI(HTTP &http, Preferences &prefs) {
 
   auto prefs_end = prefs.end();
 
-  std::string url;
+  pool.begin();
   auto prefs_it = prefs["doilookupurl"];
   if (prefs_it != prefs_end) {
-    url = prefs_it->second;
+    pool << prefs_it->second;
   }
-  url += "/v1/works/" + Encoding::URLEncode(doi) + "/transform";
+  pool << "/v1/works/" << Encoding::URLEncode(doi) << "/transform";
+  std::string_view url = pool.sv();
 
   std::string_view pem;
   post_it = prefs["pem"];
@@ -2202,6 +2196,7 @@ void DisplaySplash([[maybe_unused]] HTTP &http, Preferences &prefs) {
             "</table>\n";
 
   } else {
+    http.uri = http.self + "?action=list";
     DisplayDataList(http, prefs);
   }
 }
@@ -2875,23 +2870,23 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
         ceil(static_cast<double>(n_uniq) / static_cast<double>(col_per_row)));
   }
 
-  std::string Keyword;
   for (unsigned i = 0; i < n_per_col; i++) {
     sout << "  <tr>\n";
     for (unsigned j = 0; j < 3; j++) {
-      Keyword = "&nbsp;";
+      sout << "    <td>";
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Keyword = Encoding::LaTeXDecode(uniq.at(offset), pool);
-          Keyword = "<a href=\"" + http.self +
-                    "?action=search&match=" + Encoding::URLEncode(Keyword) +
-                    "&scheme=keywords\">" + Keyword + "</a>";
+          std::string_view keyword =
+              Encoding::LaTeXDecode(uniq.at(offset), pool);
+          sout << "<a href=\"" << http.self
+               << "?action=search&match=" << Encoding::URLEncode(keyword)
+               << "&scheme=keywords\">" << keyword << "</a>";
+        } else {
+          sout << "&nbsp;";
         }
       }
-      sout << "    <td>\n"
-           << "      " << Keyword << "\n"
-           << "    </td>\n";
+      sout << "    </td>\n";
     }
     sout << "  </tr>\n";
   }
@@ -2932,13 +2927,13 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
           "  </tr>\n"
           "  <tr>\n"
           "    <th id=\"col1\">\n"
-          "      Keyword\n"
+          "      Author\n"
           "    </th>\n"
           "    <th id=\"col2\">\n"
-          "      Keyword\n"
+          "      Author\n"
           "    </th>\n"
           "    <th id=\"col3\">\n"
-          "      Keyword\n"
+          "      Author\n"
           "    </th>\n"
           "  </tr>\n";
 
@@ -2959,25 +2954,23 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
         ceil(static_cast<double>(n_uniq) / static_cast<double>(col_per_row)));
   }
 
-  std::string Author;
   for (unsigned i = 0; i < n_per_col; i++) {
     sout << "  <tr>\n";
     for (unsigned j = 0; j < 3; j++) {
-      Author = "&nbsp;";
+      sout << "    <td>";
       if (j < col_per_row) {
         size_t offset = (j * n_per_col) + i;
         if (offset < n_uniq) {
-          Author = Encoding::LaTeXDecode(uniq.at(offset), pool);
-          Author = "<a href=\"" + http.self +
-                   "?action=search&match=" + Encoding::URLEncode(Author) +
-                   "&scheme=author\">" + Author + "</a>";
+          std::string_view author =
+              Encoding::LaTeXDecode(uniq.at(offset), pool);
+          sout << "<a href=\"" << http.self
+               << "?action=search&match=" << Encoding::URLEncode(author)
+               << "&scheme=author\">" << author << "</a>";
+        } else {
+          sout << "&nbsp;";
         }
       }
-      sout << "    <td>\n"
-              "      "
-           << Author
-           << "\n"
-              "    </td>\n";
+      sout << "    </td>\n";
     }
     sout << "  </tr>\n";
   }
@@ -3176,7 +3169,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     pem = prefs_it->second;
   }
 
-  std::string doi;
+  std::string_view doi;
   for (auto &record_it : d.vRecords) {
 
     auto record_end = record_it.end();
@@ -3213,29 +3206,30 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     field_it = record_it["author"];
     if (field_it != record_end) {
       author = Encoding::LaTeXDecode(field_it->second, pool);
-      std::string::size_type pos = author.find(", ");
-      if (pos != std::string::npos) {
+      std::string_view::size_type pos = author.find(", ");
+      if (pos != std::string_view::npos) {
         author = author.substr(0, pos);
       }
     }
-    std::string url(doilookupurl);
-    url += "/v1/"
-           "works?rows=1&sort=score&order=desc&query.bibliographic=";
+
+    pool.begin();
+    pool << doilookupurl
+         << "/v1/works?rows=1&sort=score&order=desc&query.bibliographic=";
     field_it = record_it["title"];
     if (field_it != record_end) {
-      url += Encoding::URLEncode(field_it->second);
+      pool << Encoding::URLEncode(field_it->second);
     }
-    url += "&query.author=";
-    url = url.append(author) + "&filter=from-pub-date:";
+    pool << "&query.author=" << author << "&filter=from-pub-date:";
     field_it = record_it["year"];
     if (field_it != record_end) {
-      url.append(field_it->second);
+      pool << field_it->second;
     }
-    url += ",until-pub-date:";
+    pool << ",until-pub-date:";
     if (field_it != record_end) {
-      url.append(field_it->second);
+      pool << field_it->second;
     }
-    url += "&select=DOI,score&mailto=" CONTACT;
+    pool << "&select=DOI,score&mailto=" CONTACT;
+    std::string_view url = pool.sv();
 
     std::string crossref(http.SecureGet(url, {}, 443, pem));
 
@@ -3351,7 +3345,7 @@ void Delete(HTTP &http, Preferences &prefs) {
     if (std::filesystem::exists(TargetPath)) {
       std::filesystem::remove(TargetPath);
     }
-    return (true);
+    return true;
   };
 
   std::string_view id_str = http.get["id"]->second;
@@ -3362,7 +3356,8 @@ void Delete(HTTP &http, Preferences &prefs) {
   } else {
     auto post_it = http.post["select"];
     if (post_it != http.post.end()) {
-      std::vector<std::string> vIdentifiers = split_on_comma(post_it->second);
+      std::vector<std::string_view> vIdentifiers =
+          split_on_comma(post_it->second);
 
       for (const auto &id_str : vIdentifiers) {
         if (!helper(id_str)) {
@@ -3417,7 +3412,7 @@ void Export(HTTP &http, Preferences &prefs) {
     return;
   }
 
-  std::string format(get_it->second.substr(6));
+  std::string_view format(get_it->second.substr(6));
 
   sout << "<table class=\"layout export\">\n"
           "<tr>\n"
@@ -3431,9 +3426,11 @@ void Export(HTTP &http, Preferences &prefs) {
           "    <button id=\"download\" title=\"Download File\" "
           "type=\"button\" onclick=\"gotoURL('";
 
-  for (char &c : format) {
-    c = tolower(c);
+  pool.begin();
+  for (const char c : format) {
+    pool << tolower(c);
   }
+  std::string_view key = pool.sv();
 
   auto prefs_end = prefs.end();
 
@@ -3444,7 +3441,7 @@ void Export(HTTP &http, Preferences &prefs) {
   }
 
   std::filesystem::path file;
-  prefs_it = prefs[format];
+  prefs_it = prefs[key];
   if (prefs_it != prefs_end) {
     file = prefs_it->second;
   }
@@ -3480,7 +3477,7 @@ void Export(HTTP &http, Preferences &prefs) {
 
   std::string_view id_str = http.get["id"]->second;
   if (id_str != "-1") {
-    if (format == "bibtex") {
+    if (key == "bibtex") {
       std::string_view key;
       auto prefs_it = prefs["key"];
       if (prefs_it != prefs_end) {
@@ -3488,7 +3485,7 @@ void Export(HTTP &http, Preferences &prefs) {
       }
       d.ExportRecord(id_str, ofstr, key, BibTeX::Export);
       ++n_export;
-    } else if (format == "msword") {
+    } else if (key == "msword") {
       MSWord::Header(ofstr);
       std::string_view key;
       auto prefs_it = prefs["key"];
@@ -3499,7 +3496,7 @@ void Export(HTTP &http, Preferences &prefs) {
       d.ExportRecord(id_str, ofstr, ctx, MSWord::Export);
       MSWord::Footer(ofstr);
       ++n_export;
-    } else if (format == "text") {
+    } else if (key == "text") {
       Text::ExportContext ctx = {strings.strings, pool};
       d.ExportRecord(id_str, ofstr, ctx, Text::Export);
       ++n_export;
@@ -3507,14 +3504,15 @@ void Export(HTTP &http, Preferences &prefs) {
       return;
     }
   } else {
-    if (format == "msword") {
+    if (key == "msword") {
       MSWord::Header(ofstr);
     }
     auto post_it = http.post["select"];
     if (post_it != http.post.end()) {
-      std::vector<std::string> vIdentifiers = split_on_comma(post_it->second);
+      std::vector<std::string_view> vIdentifiers =
+          split_on_comma(post_it->second);
       for (const auto &id_str : vIdentifiers) {
-        if (format == "bibtex") {
+        if (key == "bibtex") {
           std::string_view key;
           auto prefs_it = prefs["key"];
           if (prefs_it != prefs_end) {
@@ -3522,7 +3520,7 @@ void Export(HTTP &http, Preferences &prefs) {
           }
           d.ExportRecord(id_str, ofstr, key, BibTeX::Export);
           ++n_export;
-        } else if (format == "msword") {
+        } else if (key == "msword") {
           std::string_view key;
           auto prefs_it = prefs["key"];
           if (prefs_it != prefs_end) {
@@ -3531,7 +3529,7 @@ void Export(HTTP &http, Preferences &prefs) {
           MSWord::ExportContext ctx = {strings.strings, pool, key};
           d.ExportRecord(id_str, ofstr, ctx, MSWord::Export);
           ++n_export;
-        } else if (format == "text") {
+        } else if (key == "text") {
           Text::ExportContext ctx = {strings.strings, pool};
           d.ExportRecord(id_str, ofstr, ctx, Text::Export);
           ++n_export;
@@ -3539,7 +3537,7 @@ void Export(HTTP &http, Preferences &prefs) {
           break;
         }
       }
-      if (format == "msword") {
+      if (key == "msword") {
         MSWord::Footer(ofstr);
       }
     }

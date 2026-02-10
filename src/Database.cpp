@@ -66,12 +66,12 @@ bool Database::Commit() {
   static char tmp[] = "./tmp/adb.XXXXXX";
 
   if (!mkstemp(tmp)) {
-    return (false);
+    return false;
   }
 
   std::fstream ofstr(tmp);
   if (ofstr.fail()) {
-    return (false);
+    return false;
   }
 
   ofstr.write(reinterpret_cast<char *>(&id), sizeof(long)) << "\n";
@@ -87,14 +87,14 @@ bool Database::Commit() {
 
   std::string bak = filename.string() + ".bak";
   if (rename(filename.c_str(), bak.c_str()) == -1) {
-    return (false);
+    return false;
   }
 
   if (rename(tmp, filename.c_str()) == -1) {
-    return (false);
+    return false;
   }
 
-  return (true);
+  return true;
 }
 
 std::vector<Record>::iterator Database::GetRecord(std::string_view id_str) {
@@ -109,16 +109,16 @@ bool Database::SetRecord(Record &record, std::string_view id_str) {
     pool << id++;
     record.mFields.at("id") = pool.sv();
     vRecords.push_back(record);
-    return (true);
+    return true;
   } else {
     for (auto &r : vRecords) {
       if (r.mFields.at("id") == id_str) {
         r = record;
-        return (true);
+        return true;
       }
     }
   }
-  return (false);
+  return false;
 }
 
 bool Database::RemoveRecord(std::string_view id_str) {
@@ -126,37 +126,54 @@ bool Database::RemoveRecord(std::string_view id_str) {
        record_it++) {
     if (record_it->mFields.at("id") == id_str) {
       vRecords.erase(record_it);
-      return (true);
+      return true;
     }
   }
-  return (false);
+  return false;
 }
 
 void Database::SortRecords(std::string_view key, bool reverse) {
-
   if (!reverse) {
     std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
-      return (Encoding::LaTeXDecode(r1.mFields[key], pool) <
-              Encoding::LaTeXDecode(r2.mFields[key], pool));
+      auto field_it1 = r1[key];
+      if (field_it1 == r1.end()) {
+        return false;
+      }
+      auto field_it2 = r2[key];
+      if (field_it2 == r2.end()) {
+        return true;
+      }
+      return field_it1->second < field_it2->second;
     });
-  } else {
-    std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
-      return (Encoding::LaTeXDecode(r1.mFields[key], pool) >
-              Encoding::LaTeXDecode(r2.mFields[key], pool));
-    });
+    return;
   }
-};
 
-std::vector<std::string> Database::UniqueValuesForKey(
-    std::string_view key, std::vector<std::string> (*func)(std::string_view)) {
+  std::sort(vRecords.begin(), vRecords.end(), [&](Record &r1, Record &r2) {
+    auto field_it2 = r2[key];
+    if (field_it2 == r2.end()) {
+      return false;
+    }
 
-  std::vector<std::string> v;
+    auto field_it1 = r1[key];
+    if (field_it1 == r1.end()) {
+      return true;
+    }
+
+    return field_it1->second > field_it2->second;
+  });
+}
+
+std::vector<std::string_view> Database::UniqueValuesForKey(
+    std::string_view key,
+    std::vector<std::string_view> (*func)(std::string_view)) {
+
+  std::vector<std::string_view> v;
   v.reserve(64);
 
   for (auto &record : vRecords) {
     auto field_it = record.mFields.find(key);
     if (field_it != record.mFields.end()) {
-      std::vector<std::string> needles(func(field_it->second));
+      std::vector<std::string_view> needles(func(field_it->second));
       for (const auto &needle : needles) {
         bool found = false;
         for (const auto &value : v) {
@@ -174,7 +191,7 @@ std::vector<std::string> Database::UniqueValuesForKey(
 
   std::sort(v.begin(), v.end());
 
-  return (v);
+  return v;
 }
 
 std::vector<std::vector<Record>>
@@ -190,7 +207,7 @@ Database::DuplicateRecordsForKey(std::string_view key) {
 
   auto res = vRecords.begin(), end = vRecords.end(), sec = res;
   while ((res = std::adjacent_find(res, end, [key](Record &r1, Record &r2) {
-            return (r1.mFields[key] == r2.mFields[key]);
+            return r1.mFields[key] == r2.mFields[key];
           })) != end) {
 
     if (value.empty()) {
@@ -214,7 +231,7 @@ Database::DuplicateRecordsForKey(std::string_view key) {
     vDuplicates.emplace_back(vDuplicate);
   }
 
-  return (vDuplicates);
+  return vDuplicates;
 }
 
 bool Database::ReindexRecords(
@@ -227,12 +244,12 @@ bool Database::ReindexRecords(
       continue;
     }
     if (!process(r, record_id++)) {
-      return (false);
+      return false;
     }
     pool.begin();
     pool << id_str;
     r.mFields.at("id") = pool.sv();
   }
   id = record_id;
-  return (true);
+  return true;
 }

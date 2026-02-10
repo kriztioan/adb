@@ -9,16 +9,18 @@
 
 #include "Javascript.h"
 
-std::string Javascript::Array(std::vector<std::string> &v) {
-  std::string str("Array(");
+std::string_view Javascript::Array(std::vector<std::string_view> &v,
+                                   Pool &pool) {
+  pool.begin();
+  pool << "Array(";
   if (v.size()) {
     auto it = v.begin();
-    str += "'" + *it++ + "'";
+    pool << "'" << *it++ << "'";
     for (; it != v.end(); it++) {
-      str += ",'" + *it + "'";
+      pool << ",'" << *it << "'";
     }
   }
-  str += ')';
+  pool << ')';
 
-  return (str);
+  return pool.sv();
 }

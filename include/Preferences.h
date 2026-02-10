@@ -26,10 +26,10 @@ public:
   bool Save();
 
   inline auto operator[](std::string_view key) const {
-    return (preferences[key]);
+    return preferences[key];
   }
 
-  auto end() const { return (preferences.end()); }
+  auto end() const { return preferences.end(); }
 
   Record preferences;
 

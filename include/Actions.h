@@ -33,7 +33,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
-std::string list_themes(std::filesystem::path &directory);
+std::string_view list_themes(std::filesystem::path &directory);
 
 void WriteHTMLHeader(Preferences &prefs);
 void WriteOutput();
@@ -46,7 +46,8 @@ void WriteHTMLFooter();
 void DisplayMenu(HTTP &http, Preferences &prefs);
 void DisplayFooter(const std::chrono::steady_clock::time_point &t0);
 void DisplayRecord(HTTP &http, Preferences &prefs);
-std::vector<std::string> split_on_and(std::string str);
+std::vector<std::string_view> split_on_and(std::string_view sv);
+std::vector<std::string_view> split_on_comma(std::string_view sv);
 
 void DisplayRecordForm(HTTP &http, Preferences &prefs);
 

@@ -23,7 +23,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
   state = false;
 
   if (!std::filesystem::is_regular_file(f)) {
-    return (state);
+    return state;
   }
 
   size_t page_size = getpagesize();
@@ -32,7 +32,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
 
   int fd = open(filename.c_str(), O_RDONLY | O_SHLOCK);
   if (fd == -1) {
-    return (state);
+    return state;
   }
 
   char *data =
@@ -40,7 +40,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
 
   if (data == MAP_FAILED) {
     close(fd);
-    return (state);
+    return state;
   }
 
   char *p = data, *q = p + size, *c, *key;
@@ -78,7 +78,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
         while (*p != '\n' && *p)
           ++p;
       } else {
-        return (state);
+        return state;
       }
     }
     ++p;
@@ -87,7 +87,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
 
   state = true;
 
-  return (state);
+  return state;
 }
 
 BibTeX::Strings::~Strings() {
@@ -97,4 +97,4 @@ BibTeX::Strings::~Strings() {
   }
 }
 
-bool BibTeX::Strings::good() { return (state); }
+bool BibTeX::Strings::good() { return state; }

@@ -38,6 +38,9 @@ protected:
   }
 
   std::streamsize xsputn(const char *data, std::streamsize size) override {
+    if (pptr() + size > epptr()) {
+      return EOF;
+    }
     std::memcpy(pptr(), data, size);
     pbump(size);
     return size;

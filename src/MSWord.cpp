@@ -317,7 +317,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
   ostr << "\n</b:Source>";
 
-  return (true);
+  return true;
 }
 
 void MSWord::Header(std::ostream &ostr) {

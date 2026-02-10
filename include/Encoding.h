@@ -26,7 +26,7 @@ std::string_view LaTeXDecode(std::string_view sv, Pool &pool);
 std::string HTMLEncode(std::string_view sv);
 std::string HTML2XML(std::string_view sv);
 
-static const std::unordered_map<std::string_view, std::string_view>
+static inline const std::unordered_map<std::string_view, std::string_view>
     latex_symbols = {{"\\sim", "~"},
                      {"\\alpha", "α"},
                      {"\\beta", "β"},
@@ -118,8 +118,8 @@ static const std::unordered_map<std::string_view, std::string_view>
                      {"\\textemdash", "—"},
                      {"\\textendash", "–"}};
 
-static const std::unordered_map<std::string_view,
-                                std::unordered_map<char, std::string_view>>
+static inline const std::unordered_map<
+    std::string_view, std::unordered_map<char, std::string_view>>
     latex_accents = {
 
         {"\\'", {{'a', "á"}, {'e', "é"}, {'i', "í"}, {'o', "ó"}, {'u', "ú"},
@@ -180,16 +180,16 @@ static const std::unordered_map<std::string_view,
 
         {"\\c", {{'c', "ç"}, {'C', "Ç"}}}};
 
-static const std::unordered_map<char, char> latex_escaped = {
+static inline const std::unordered_map<char, char> latex_escaped = {
     {'&', '&'}, {'%', '%'}, {'$', '$'}, {'#', '#'}, {'_', '_'},
     {'{', '{'}, {'}', '}'}, {'~', '~'}, {'^', '^'}};
 
-static const std::unordered_map<char, std::string> latex_superscripts = {
+static inline const std::unordered_map<char, std::string> latex_superscripts = {
     {'0', "⁰"}, {'1', "¹"}, {'2', "²"}, {'3', "³"}, {'4', "⁴"}, {'5', "⁵"},
     {'6', "⁶"}, {'7', "⁷"}, {'8', "⁸"}, {'9', "⁹"}, {'+', "⁺"}, {'-', "⁻"},
     {'=', "⁼"}, {'(', "⁽"}, {')', "⁾"}, {'n', "ⁿ"}, {'i', "ⁱ"}};
 
-static const std::unordered_map<char, std::string> latex_subscripts = {
+static inline const std::unordered_map<char, std::string> latex_subscripts = {
     {'0', "₀"}, {'1', "₁"}, {'2', "₂"}, {'3', "₃"}, {'4', "₄"}, {'5', "₅"},
     {'6', "₆"}, {'7', "₇"}, {'8', "₈"}, {'9', "₉"}, {'+', "₊"}, {'-', "₋"},
     {'=', "₌"}, {'(', "₍"}, {')', "₎"}, {'a', "ₐ"}, {'e', "ₑ"}, {'h', "ₕ"},

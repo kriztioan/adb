@@ -87,5 +87,5 @@ int main() {
 
   WriteOutput();
 
-  return (0);
+  return EXIT_SUCCESS;
 }

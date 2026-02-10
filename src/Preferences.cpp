@@ -95,7 +95,7 @@ bool Preferences::Save() {
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
   if (fd == -1) {
-    return (false);
+    return false;
   }
 
   dprintf(fd, "#\n"
@@ -112,5 +112,5 @@ bool Preferences::Save() {
 
   close(fd);
 
-  return (true);
+  return true;
 }
