@@ -3428,7 +3428,7 @@ void Export(HTTP &http, Preferences &prefs) {
 
   pool.begin();
   for (const char c : format) {
-    pool << tolower(c);
+    pool << static_cast<char>(tolower(c));
   }
   std::string_view key = pool.sv();
 
