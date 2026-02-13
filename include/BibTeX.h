@@ -19,6 +19,7 @@
 #undef class
 
 #include <array>
+#include <string>
 #include <string_view>
 
 class BibTeXParser {
@@ -28,10 +29,11 @@ public:
 
   Record Parse();
 
-  operator bool() const { return status && entry; }
+  operator bool() const { return status && pos != std::string_view::npos; }
 
 private:
-  AST *entries, *entry;
+  std::string_view sv;
+  std::string_view::size_type pos;
   bt_name_format *fmt;
   Pool &pool;
   int status;

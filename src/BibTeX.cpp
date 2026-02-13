@@ -9,7 +9,8 @@
 
 #include "BibTeX.h"
 
-BibTeXParser::BibTeXParser(std::string_view input, Pool &pool) : pool(pool) {
+BibTeXParser::BibTeXParser(std::string_view sv, Pool &pool)
+    : sv(sv), pool(pool) {
 
   bt_initialize();
 
@@ -23,21 +24,27 @@ BibTeXParser::BibTeXParser(std::string_view input, Pool &pool) : pool(pool) {
 
   fmt = bt_create_name_format(const_cast<char *>("vljf"), true);
 
-  entry = entries = bt_parse_entry_s(const_cast<char *>(input.data()), nullptr,
-                                     1, 0, &status);
+  bt_set_stringopts(BTE_REGULAR, BTO_PASTE | BTO_COLLAPSE);
+
+  pos = sv.find_first_of('@');
 }
 
 BibTeXParser::~BibTeXParser() {
   if (fmt) {
     bt_free_name_format(fmt);
   }
-  if (entries) {
-    bt_free_ast(entries);
-  }
+  bt_parse_entry_s(nullptr, nullptr, 1, 0, nullptr);
   bt_cleanup();
 }
 
 Record BibTeXParser::Parse() {
+
+  std::string_view::size_type end = sv.find_first_of('@', pos + 2);
+  std::string str(sv.substr(pos, end - pos));
+  pos = end;
+
+  AST *entry =
+      bt_parse_entry_s(const_cast<char *>(str.c_str()), nullptr, 1, 0, &status);
 
   pool.begin();
   pool << "id=-1";
@@ -52,9 +59,10 @@ Record BibTeXParser::Parse() {
 
   AST *field = bt_next_field(entry, nullptr, &key);
   while (field) {
+    pool << '&' << key << '=';
     if (strcmp(key, "author") == 0 || strcmp(key, "editor") == 0) {
 
-      pool << "&" << key << "=%7B";
+      pool << "%7B";
 
       bt_stringlist *names = bt_split_list(
           bt_get_text(field), const_cast<char *>("and"), nullptr, 1, 0);
@@ -74,16 +82,21 @@ Record BibTeXParser::Parse() {
       pool << "%7D";
 
       bt_free_list(names);
-    } else if (strcmp(key, "doi") == 0 || strcmp(key, "doi") == 0) {
-      pool << "&%7C" << Encoding::URLEncode(bt_get_text(field)) << "%7D";
     } else {
-      pool << "&" << key << "=" << Encoding::URLEncode(bt_get_text(field));
+
+      bt_nodetype nodetype;
+      bt_next_value(field, nullptr, &nodetype, nullptr);
+      if (nodetype == BTAST_STRING) {
+        pool << '&' << key << "=%7B" << Encoding::URLEncode(bt_get_text(field))
+             << "%7D";
+      } else {
+
+        pool << '&' << key << '=' << bt_get_text(field);
+      }
     }
 
     field = bt_next_field(entry, field, &key);
   }
-
-  entry = bt_next_entry(entries, entry);
 
   return Record(const_cast<char *>(pool.sv().data()));
 }
