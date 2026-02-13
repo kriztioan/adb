@@ -68,6 +68,8 @@ std::string Encoding::URLEncode(std::string_view sv) {
 
 std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
 
+  std::string_view utf8_nfc;
+
   std::string_view::size_type len = sv.length();
 
   pool.begin();
@@ -137,14 +139,11 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
         pool << sv.substr(i, 2);
         break;
       }
-      auto acc_it = latex_accents.find(sv.substr(i, 2));
-      if (acc_it != latex_accents.end()) {
-        auto trans_it = acc_it->second.find(sv[i + 2]);
-        if (trans_it != acc_it->second.end()) {
-          pool << trans_it->second;
-          i += 2;
-          continue;
-        }
+      auto cmb_it = latex_accents.find(sv[i + 1]);
+      if (cmb_it != latex_accents.end()) {
+        utf8_nfc = cmb_it->second;
+        i += 1;
+        continue;
       }
       auto esc_it = latex_escaped.find(sv[i + 1]);
       if (esc_it != latex_escaped.end()) {
@@ -164,6 +163,10 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
       auto sym_it = latex_symbols.find(sv.substr(i, j - i));
       if (sym_it != latex_symbols.end()) {
         pool << sym_it->second;
+        if (!utf8_nfc.empty()) {
+          pool << utf8_nfc;
+          utf8_nfc = std::string_view();
+        }
         i = j;
         continue;
       }
@@ -172,6 +175,10 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
       continue;
     }
     pool << sv[i];
+    if (!utf8_nfc.empty()) {
+      pool << utf8_nfc;
+      utf8_nfc = std::string_view();
+    }
   }
 
   return pool.sv();
