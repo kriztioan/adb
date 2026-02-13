@@ -42,8 +42,9 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       i = author.find(".", j);
       if (i != std::string::npos) {
         given = author.substr(j, i - j + 1);
-        if (i != author.length())
+        if (i != author.length()) {
           middle = author.substr(i + 1);
+        }
       }
     } else {
       last = author;
@@ -89,8 +90,9 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       i = author.find(".", j);
       if (i != std::string::npos) {
         given = author.substr(j, i - j + 1);
-        if (i != author.length())
+        if (i != author.length()) {
           middle = author.substr(i + 1);
+        }
       }
     } else {
       last = author;
@@ -214,7 +216,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
         if (!first) {
           ostr << last;
         } else {
-          ostr << "eds. ";
+          ostr << "eds. " << last;
           first = false;
         }
       }
@@ -222,7 +224,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       if (!given.empty()) {
         ostr << ", ";
         if (!first) {
-          ostr << first;
+          ostr << given;
         } else {
           ostr << "eds. ";
           first = false;
@@ -270,7 +272,7 @@ bool Text::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
       if (!given.empty()) {
         ostr << ", ";
         if (!first) {
-          ostr << first;
+          ostr << given;
         } else {
           ostr << "eds. ";
           first = true;
