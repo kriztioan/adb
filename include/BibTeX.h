@@ -14,16 +14,29 @@
 #include "Record.h"
 #include "Strings.h"
 
-#include <string>
+#define class bt_errclass_
+#include <btparse.h>
+#undef class
+
+#include <array>
 #include <string_view>
 
+class BibTeXParser {
+public:
+  BibTeXParser(std::string_view input, Pool &pool);
+  ~BibTeXParser();
+
+  Record Parse();
+
+  operator bool() const { return status && entry; }
+
+private:
+  AST *entries, *entry;
+  bt_name_format *fmt;
+  Pool &pool;
+  int status;
+};
+
 namespace BibTeX {
-
-std::string_view SplitAuthors(std::string_view authors, std::string_view self,
-                              Pool &pool, int max_authors = -1);
-std::string_view SplitKeywords(std::string_view keywords, std::string_view self,
-                               Pool &pool, std::string_view separator = " ");
-
-Record Parse(std::string_view bibtex, size_t &nbytes_parsed, Pool &pool);
 bool Export(Record &record, std::ostream &ostr, std::string_view &key);
 }; // namespace BibTeX

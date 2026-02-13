@@ -14,11 +14,18 @@
 #include <sstream>
 #include <string_view>
 
+#include "Pool.h"
+
 namespace HTML {
 
-std::string Select(std::string_view options, std::string_view selected,
-                   std::string_view name, std::string_view onchange);
+std::string_view Select(std::string_view options, std::string_view selected,
+                        std::string_view name, std::string_view onchange,
+                        Pool &pool);
 
-std::string Filesize(std::filesystem::path &f);
+std::string_view Filesize(std::filesystem::path &f, Pool &pool);
 
+std::string_view SplitAuthors(std::string_view authors, std::string_view self,
+                              Pool &pool, int max_authors = -1);
+std::string_view SplitKeywords(std::string_view keywords, std::string_view self,
+                               Pool &pool, std::string_view separator = " ");
 }; // namespace HTML

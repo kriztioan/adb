@@ -21,7 +21,8 @@ Building `AdB` requires the following to be available and/or installed:
 3. `jemalloc`
 4. `openssl`
 5. `rapidjson`
-6. `pkg-config`
+6. `btparse`
+7. `pkg-config`
 
 The web application is build with:
 
@@ -32,7 +33,7 @@ cmake ../
 make
 ```
 
-This produces a directory called `adb` that should be moved into your webserver root directory. Using a web browser you can then navigate to:
+This produces a directory called `adb` that should be moved into your web server root directory. Using a web browser you can then navigate to:
 
 ```shell
 http://localhost/adb/index.cgi

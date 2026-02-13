@@ -230,15 +230,14 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   std::string_view Authors;
   record_it = record["author"];
   if (record_it != record_end) {
-    Authors =
-        BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
-                             http.self, pool, nauthors);
+    Authors = HTML::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
+                                 http.self, pool, nauthors);
   } else {
     record_it = record["editor"];
     if (record_it != record_end) {
       Authors =
-          BibTeX::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
-                               http.self, pool, nauthors);
+          HTML::SplitAuthors(Encoding::LaTeXDecode(record_it->second, pool),
+                             http.self, pool, nauthors);
     }
   }
 
@@ -345,9 +344,8 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   record_it = record["keywords"];
   if (record_it != record_end) {
     sout << "      "
-         << BibTeX::SplitKeywords(
-                Encoding::LaTeXDecode(record_it->second, pool), http.self,
-                pool);
+         << HTML::SplitKeywords(Encoding::LaTeXDecode(record_it->second, pool),
+                                http.self, pool);
   }
   sout << "\n    </td>\n"
           "    <td>\n";
@@ -769,7 +767,7 @@ void DisplayMenu(HTTP &http, [[maybe_unused]] Preferences &prefs) {
     sout << Encoding::HTMLEncode(get_it->second);
   }
   sout << "\" accesskey=\"s\"/> as \n"
-       << HTML::Select(options, scheme, "scheme", "") << "\n"
+       << HTML::Select(options, scheme, "scheme", "", pool) << "\n"
        << "      <button id=\"search\" title=\"Search, hot-key Alt + S, Ctrl + "
           "S "
           "(Apple)\" type=\"submit\">Search</button>\n"
@@ -931,12 +929,12 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   std::string_view Authors;
   field_it = (*record_it)["author"];
   if (field_it != field_end) {
-    Authors = BibTeX::SplitAuthors(
-        Encoding::LaTeXDecode(field_it->second, pool), http.self, pool);
+    Authors = HTML::SplitAuthors(Encoding::LaTeXDecode(field_it->second, pool),
+                                 http.self, pool);
   } else {
     field_it = (*record_it)["editor"];
     if (field_it != field_end) {
-      Authors = BibTeX::SplitAuthors(
+      Authors = HTML::SplitAuthors(
           Encoding::LaTeXDecode(field_it->second, pool), http.self, pool);
     }
   }
@@ -1052,8 +1050,8 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
           "      <span id=\"keywords\">";
   field_it = (*record_it)["keywords"];
   if (field_it != field_end) {
-    sout << BibTeX::SplitKeywords(Encoding::LaTeXDecode(field_it->second, pool),
-                                  http.self, pool, " – ");
+    sout << HTML::SplitKeywords(Encoding::LaTeXDecode(field_it->second, pool),
+                                http.self, pool, " – ");
   }
   sout << "      </span> <span ";
   field_it = (*record_it)["biblcode"];
@@ -1420,7 +1418,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "    </td>\n"
           "    <td>\n"
           "      "
-       << HTML::Select(options, type, "type", "evalType(this)")
+       << HTML::Select(options, type, "type", "evalType(this)", pool)
        << "\n"
           "    </td>\n"
           "  </tr>\n"
@@ -1805,7 +1803,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   if (field_it != field_end && field_it->second == "on") {
     std::filesystem::path PDFPath(base_path / "archive" / id_str);
     PDFPath.replace_extension("pdf");
-    sout << "d <i>" + HTML::Filesize(PDFPath);
+    sout << "d <i>" << HTML::Filesize(PDFPath, pool);
   } else {
     sout << " (<i>downloads from ADS, or, when specified uses Upload "
             "file</i>)\n";
@@ -2072,6 +2070,8 @@ void QueryADS(HTTP &http, Preferences &prefs) {
 
   std::string bibtex = http.SecurePost(ADS_API_URL, post, headers, 443, pem);
 
+  http.post.mFields.clear();
+
   rapidjson::Document json;
   if (json.Parse(bibtex.c_str()).HasParseError() || !json.HasMember("export")) {
     pool.begin();
@@ -2081,9 +2081,9 @@ void QueryADS(HTTP &http, Preferences &prefs) {
     return;
   }
 
-  size_t size = 0;
+  BibTeXParser parser(json["export"].GetString(), pool);
 
-  http.post = BibTeX::Parse(json["export"].GetString(), size, pool);
+  http.post = parser.Parse();
 
   http.post.mFields["ADScode"] = http.post.mFields["biblcode"];
 
@@ -2092,9 +2092,11 @@ void QueryADS(HTTP &http, Preferences &prefs) {
 
 void QueryDOI(HTTP &http, Preferences &prefs) {
 
+  auto post_end = http.post.end();
+
   std::string_view doi;
   auto post_it = http.post["doi"];
-  if (post_it != http.post.end()) {
+  if (post_it != post_end) {
     doi = post_it->second;
   }
 
@@ -2119,19 +2121,18 @@ void QueryDOI(HTTP &http, Preferences &prefs) {
 
   std::string bibtex(http.SecureGet(url, headers, 443, pem));
 
-  size_t size = 0;
+  http.post.mFields.clear();
 
-  http.post = BibTeX::Parse(bibtex, size, pool);
-
-  auto node = http.post.mFields.extract("DOI");
-  if (!node.empty()) {
-    node.key() = "doi";
-    http.post.mFields.insert(std::move(node));
-  } else {
+  BibTeXParser parser(bibtex, pool);
+  if (!parser) {
     pool.begin();
     pool << doi << " (not found)";
     http.post.mFields["doi"] = pool.sv();
+    DisplayRecordForm(http, prefs);
+    return;
   }
+
+  http.post = parser.Parse();
 
   DisplayRecordForm(http, prefs);
 }
@@ -2262,7 +2263,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   sout << "\" /> ";
   if (prefs_it != prefs_end) {
     std::filesystem::path DataPath(base_path / prefs_it->second);
-    sout << HTML::Filesize((DataPath));
+    sout << HTML::Filesize(DataPath, pool);
   }
   sout << "\n"
           "    </td>\n"
@@ -2282,7 +2283,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   sout << "\" /> ";
   if (prefs_it != prefs_end) {
     std::filesystem::path AbbreviationPath(base_path / prefs_it->second);
-    sout << HTML::Filesize(AbbreviationPath);
+    sout << HTML::Filesize(AbbreviationPath, pool);
   }
   sout << "\n"
           "    </td>\n"
@@ -2478,7 +2479,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
           "    <td>\n";
   if (!plugins.empty()) {
     std::filesystem::path plugin_path(base_path / plugins);
-    sout << HTML::Select(list_themes(plugin_path), scheme, "scheme", "");
+    sout << HTML::Select(list_themes(plugin_path), scheme, "scheme", "", pool);
   } else {
     sout << "no plugins available";
   }
@@ -2557,7 +2558,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   sout << "\" /> ";
   if (prefs_it != prefs_end) {
     std::filesystem::path BibTeXPath(base_path / prefs_it->second);
-    sout << HTML::Filesize(BibTeXPath);
+    sout << HTML::Filesize(BibTeXPath, pool);
   }
   sout << "\n"
           "    </td>\n"
@@ -2578,7 +2579,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   sout << "\" /> ";
   if (prefs_it != prefs_end) {
     std::filesystem::path MSWordPath(base_path / prefs_it->second);
-    sout << HTML::Filesize(MSWordPath);
+    sout << HTML::Filesize(MSWordPath, pool);
   }
   sout << "\n"
           "    </td>\n"
@@ -2599,7 +2600,7 @@ void DisplayConfigForm(HTTP &http, Preferences &prefs) {
   sout << "\" /> ";
   if (prefs_it != prefs_end) {
     std::filesystem::path TextPath(base_path / prefs_it->second);
-    sout << HTML::Filesize(TextPath);
+    sout << HTML::Filesize(TextPath, pool);
   }
   sout << "\n"
           "    </td>\n"
@@ -3392,12 +3393,10 @@ void Import(HTTP &http, Preferences &prefs) {
     return;
   }
 
-  size_t size = 0;
-
-  auto record = BibTeX::Parse(http.file_data, size, pool);
-  while (record.mFields.size()) {
+  BibTeXParser parser(http.file_data, pool);
+  while (parser) {
+    Record record = parser.Parse();
     d.SetRecord(record);
-    record = BibTeX::Parse(http.file_data, size, pool);
   }
 
   d.Commit();

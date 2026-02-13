@@ -9,222 +9,82 @@
 
 #include "BibTeX.h"
 
-std::string_view BibTeX::SplitAuthors(std::string_view authors,
-                                      std::string_view self, Pool &pool,
-                                      int max_authors) {
+BibTeXParser::BibTeXParser(std::string_view input, Pool &pool) : pool(pool) {
 
-  if (authors.empty()) {
-    return std::string_view();
+  bt_initialize();
+
+  static constexpr std::array<const char *, 12> mon = {
+      "jan", "feb", "mar", "apr", "may", "jun",
+      "jul", "aug", "sep", "oct", "nov", "dec"};
+
+  for (auto m : mon) {
+    bt_add_macro_text(const_cast<char *>(m), const_cast<char *>(m), nullptr, 1);
   }
 
-  pool.begin();
+  fmt = bt_create_name_format(const_cast<char *>("vljf"), true);
 
-  std::string_view::size_type beg = 0, end = authors.find(" and ");
-
-  auto output_author = [&]() {
-    std::string author;
-
-    for (const auto &c : authors.substr(beg, end - beg)) {
-      if (c != '{' && c != '}') {
-        author += c;
-      }
-    }
-    pool << "<span title=\"Search for author &apos;" << author
-         << "&apos;\"><a href=\"" << self << "?action=search&match=" << author
-         << "&scheme=author\">" << author << "</a></span>";
-  };
-
-  int nauthors = 1;
-  output_author();
-  if (end != std::string_view::npos) {
-    while (nauthors < max_authors || max_authors == -1) {
-      beg = end + 5;
-      end = authors.find(" and ", beg);
-      pool << ", ";
-      output_author();
-      ++nauthors;
-      if (end == std::string_view::npos) {
-        break;
-      }
-    }
-    if (nauthors == max_authors && end != std::string_view::npos) {
-      pool << " <span class=\"etal\">et al.</span>";
-    }
-  }
-
-  return pool.sv();
+  entry = entries = bt_parse_entry_s(const_cast<char *>(input.data()), nullptr,
+                                     1, 0, &status);
 }
 
-std::string_view BibTeX::SplitKeywords(std::string_view keywords,
-                                       std::string_view self, Pool &pool,
-                                       std::string_view separator) {
-
-  if (keywords.empty()) {
-    return std::string_view();
+BibTeXParser::~BibTeXParser() {
+  if (fmt) {
+    bt_free_name_format(fmt);
   }
-
-  pool.begin();
-
-  std::string::size_type beg = 0, end = keywords.find(", ");
-
-  auto output_keyword = [&]() {
-    std::string_view keyword(keywords.substr(beg, end - beg));
-    pool << "<span title=\"Search for keyword &apos;" << keyword
-         << "&apos;\"><a href=\"" << self << "?action=search&match=" << keyword
-         << "&scheme=keywords\">" << keyword << "</a></span>";
-  };
-
-  output_keyword();
-  while (end != std::string_view::npos) {
-    beg = end + 2;
-    end = keywords.find(", ", beg);
-    pool << separator;
-    output_keyword();
+  if (entries) {
+    bt_free_ast(entries);
   }
-
-  return pool.sv();
+  bt_cleanup();
 }
 
-Record BibTeX::Parse(std::string_view bibtex, size_t &nbytes_parsed,
-                     Pool &pool) {
+Record BibTeXParser::Parse() {
 
   pool.begin();
-  pool << "id=-1&";
+  pool << "id=-1";
 
-  std::string buff;
-  buff.reserve(4096);
+  bt_change_case('u', bt_entry_type(entry), 0);
 
-  // part I
-  while (nbytes_parsed < bibtex.length() && bibtex[nbytes_parsed] != '@') {
-    if (bibtex[nbytes_parsed] == '%') {
-      while (bibtex[nbytes_parsed] != '\n' && nbytes_parsed < bibtex.length())
-        ++nbytes_parsed;
-    }
-    ++nbytes_parsed;
-  }
-  if (nbytes_parsed >= bibtex.length())
-    return Record{};
-  else if (bibtex[nbytes_parsed] != '@')
-    return Record{};
-  ++nbytes_parsed;
-
-  // part II
-
-  while (bibtex[nbytes_parsed] != '{' && nbytes_parsed < bibtex.length()) {
-    if (bibtex[nbytes_parsed] == '%') {
-      while (bibtex[nbytes_parsed] != '\n' && nbytes_parsed < bibtex.length())
-        ++nbytes_parsed;
-    } else if (bibtex[nbytes_parsed] == '@' || bibtex[nbytes_parsed] == '=' ||
-               bibtex[nbytes_parsed] == '}' || bibtex[nbytes_parsed] == ',')
-      break;
-    else if (!isspace(bibtex[nbytes_parsed]))
-      buff += bibtex[nbytes_parsed];
-    ++nbytes_parsed;
-  }
-  if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '{') {
-    return Record{};
-  }
-  pool << "type=" << Encoding::URLEncode(buff.c_str())
+  pool << "&type=" << Encoding::URLEncode(bt_entry_type(entry))
+       << "&biblcode=" << Encoding::URLEncode(bt_entry_key(entry))
        << "&ADSabstract=on&ADSfullpaper=on";
-  buff.clear();
-  ++nbytes_parsed;
 
-  // part III
+  char *key;
 
-  while (bibtex[nbytes_parsed] != ',' && bibtex[nbytes_parsed] != '}' &&
-         nbytes_parsed < bibtex.length()) {
-    if (bibtex[nbytes_parsed] == '%') {
-      while (bibtex[nbytes_parsed] != '\n' && nbytes_parsed < bibtex.length())
-        ++nbytes_parsed;
-    } else if (bibtex[nbytes_parsed] == '@' || bibtex[nbytes_parsed] == '=' ||
-               bibtex[nbytes_parsed] == '{')
-      break;
-    else if (!isspace(bibtex[nbytes_parsed]))
-      buff += bibtex[nbytes_parsed];
-    ++nbytes_parsed;
-  }
-  if (nbytes_parsed >= bibtex.length() ||
-      (bibtex[nbytes_parsed] != '}' && bibtex[nbytes_parsed] != ','))
-    return Record{};
-  else if (bibtex[nbytes_parsed] == '}') {
-    return Record{};
-  }
-  pool << "&biblcode=" << Encoding::URLEncode(buff.c_str());
+  AST *field = bt_next_field(entry, nullptr, &key);
+  while (field) {
+    if (strcmp(key, "author") == 0 || strcmp(key, "editor") == 0) {
 
-  buff.clear();
-  ++nbytes_parsed;
+      pool << "&" << key << "=%7B";
 
-  bool pairs = true;
-  while (pairs) {
-    // part IV
+      bt_stringlist *names = bt_split_list(
+          bt_get_text(field), const_cast<char *>("and"), nullptr, 1, 0);
 
-    while (bibtex[nbytes_parsed] != '=' && nbytes_parsed < bibtex.length()) {
-      if (bibtex[nbytes_parsed] == '%') {
-        while (bibtex[nbytes_parsed] != '\n' && nbytes_parsed < bibtex.length())
-          ++nbytes_parsed;
-      } else if (bibtex[nbytes_parsed] == '@' || bibtex[nbytes_parsed] == '{' ||
-                 bibtex[nbytes_parsed] == '}' || bibtex[nbytes_parsed] == ',')
-        break;
-      else if (!isspace(bibtex[nbytes_parsed]))
-        buff += bibtex[nbytes_parsed];
-      ++nbytes_parsed;
-    }
-    if (nbytes_parsed >= bibtex.length() || bibtex[nbytes_parsed] != '=') {
-      return Record{};
-    }
-    pool << '&' << Encoding::URLEncode(buff.c_str());
-    buff.clear();
-    ++nbytes_parsed;
+      for (int i = 0; i < names->num_items; i++) {
 
-    // part V
-
-    int balance_brackets = 0;
-    while (bibtex[nbytes_parsed] != ',' && bibtex[nbytes_parsed] != '}' &&
-           nbytes_parsed < bibtex.length()) {
-      if (bibtex[nbytes_parsed] == '%') {
-        while (bibtex[nbytes_parsed] != '\n' && nbytes_parsed < bibtex.length())
-          ++nbytes_parsed;
-      } else if (bibtex[nbytes_parsed] == '@' || bibtex[nbytes_parsed] == '=')
-        break;
-      else if (bibtex[nbytes_parsed] == '{') {
-        ++balance_brackets;
-
-        buff += bibtex[nbytes_parsed++];
-        while (balance_brackets != 0 && nbytes_parsed < bibtex.length()) {
-
-          if (bibtex[nbytes_parsed] == '{')
-            ++balance_brackets;
-          else if (bibtex[nbytes_parsed] == '}')
-            --balance_brackets;
-
-          if (bibtex[nbytes_parsed] == '\n' || bibtex[nbytes_parsed] == '\r') {
-            while (isspace(bibtex[nbytes_parsed]) &&
-                   nbytes_parsed < bibtex.length())
-              ++nbytes_parsed;
-            buff += ' ';
-          } else {
-            buff += bibtex[nbytes_parsed++];
-          }
+        bt_name *name = bt_split_name(names->items[i], nullptr, 1, 0);
+        if (i > 0) {
+          pool << "+and+";
         }
-        nbytes_parsed--;
-      } else if (!isspace(bibtex[nbytes_parsed]))
-        buff += bibtex[nbytes_parsed];
-      ++nbytes_parsed;
-    }
-    if (nbytes_parsed >= bibtex.length() ||
-        (bibtex[nbytes_parsed] != '}' && bibtex[nbytes_parsed] != ',')) {
-      return Record{};
-    } else if (bibtex[nbytes_parsed] == '}') {
-      pairs = false;
+
+        pool << Encoding::URLEncode(bt_format_name(name, fmt));
+
+        bt_free_name(name);
+      }
+
+      pool << "%7D";
+
+      bt_free_list(names);
+    } else if (strcmp(key, "doi") == 0 || strcmp(key, "doi") == 0) {
+      pool << "&%7C" << Encoding::URLEncode(bt_get_text(field)) << "%7D";
+    } else {
+      pool << "&" << key << "=" << Encoding::URLEncode(bt_get_text(field));
     }
 
-    pool << '=' << Encoding::URLEncode(buff.c_str());
-    buff.clear();
-    ++nbytes_parsed;
+    field = bt_next_field(entry, field, &key);
   }
-  ++nbytes_parsed;
 
-  pool << '\0';
+  entry = bt_next_entry(entries, entry);
+
   return Record(const_cast<char *>(pool.sv().data()));
 }
 

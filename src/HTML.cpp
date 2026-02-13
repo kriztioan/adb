@@ -9,15 +9,16 @@
 
 #include "HTML.h"
 
-std::string HTML::Select(std::string_view options, std::string_view selected,
-                         std::string_view name, std::string_view onchange) {
+std::string_view HTML::Select(std::string_view options,
+                              std::string_view selected, std::string_view name,
+                              std::string_view onchange, Pool &pool) {
 
-  std::string select("      <select class=\"select\" name=\"");
-  select = select.append(name) + "\" onchange=\"";
-  select = select.append(onchange) + ";\">";
+  pool.begin();
+  pool << "      <select class=\"select\" name=\"" << name << "\" onchange=\""
+       << onchange << ";\">";
 
   std::string_view option;
-  std::string::size_type size, start = 0, end;
+  std::string_view::size_type size, start = 0, end;
 
   if ((size = options.length()) > 0) {
     while (start < size) {
@@ -26,39 +27,111 @@ std::string HTML::Select(std::string_view options, std::string_view selected,
         end = options.length();
       }
       option = options.substr(start, end - start);
-      select += "\n        <option value=\"";
-      select = select.append(option) + "\"";
+      pool << "\n        <option value=\"" << option << '\"';
       if (selected == option) {
-        select += " selected=\"selected\"";
+        pool << " selected=\"selected\"";
       }
-      select += ">";
-      select = select.append(option) + "</option>";
+      pool << '>' << option << "</option>";
       start = end + 1;
     }
   } else {
-    select += "\n        <option value=\"";
-    select = select.append(selected) + "\">";
-    select = select.append(selected) + "</option>";
+    pool << "\n        <option value=\"" << selected << "\">" << selected
+         << "</option>";
   }
-  select += "\n      </select>";
+  pool << "\n      </select>";
 
-  return select;
+  return pool.sv();
 }
 
-std::string HTML::Filesize(std::filesystem::path &f) {
+std::string_view HTML::SplitAuthors(std::string_view authors,
+                                    std::string_view self, Pool &pool,
+                                    int max_authors) {
+
+  if (authors.empty()) {
+    return std::string_view();
+  }
+
+  pool.begin();
+
+  std::string_view::size_type beg = 0, end = authors.find(" and ");
+
+  auto output_author = [&]() {
+    std::string author;
+
+    for (const auto &c : authors.substr(beg, end - beg)) {
+      if (c != '{' && c != '}') {
+        author += c;
+      }
+    }
+    pool << "<span title=\"Search for author &apos;" << author
+         << "&apos;\"><a href=\"" << self << "?action=search&match=" << author
+         << "&scheme=author\">" << author << "</a></span>";
+  };
+
+  int nauthors = 1;
+  output_author();
+  if (end != std::string_view::npos) {
+    while (nauthors < max_authors || max_authors == -1) {
+      beg = end + 5;
+      end = authors.find(" and ", beg);
+      pool << ", ";
+      output_author();
+      ++nauthors;
+      if (end == std::string_view::npos) {
+        break;
+      }
+    }
+    if (nauthors == max_authors && end != std::string_view::npos) {
+      pool << " <span class=\"etal\">et al.</span>";
+    }
+  }
+
+  return pool.sv();
+}
+
+std::string_view HTML::SplitKeywords(std::string_view keywords,
+                                     std::string_view self, Pool &pool,
+                                     std::string_view separator) {
+
+  if (keywords.empty()) {
+    return std::string_view();
+  }
+
+  pool.begin();
+
+  std::string::size_type beg = 0, end = keywords.find(", ");
+
+  auto output_keyword = [&]() {
+    std::string_view keyword(keywords.substr(beg, end - beg));
+    pool << "<span title=\"Search for keyword &apos;" << keyword
+         << "&apos;\"><a href=\"" << self << "?action=search&match=" << keyword
+         << "&scheme=keywords\">" << keyword << "</a></span>";
+  };
+
+  output_keyword();
+  while (end != std::string_view::npos) {
+    beg = end + 2;
+    end = keywords.find(", ", beg);
+    pool << separator;
+    output_keyword();
+  }
+
+  return pool.sv();
+}
+std::string_view HTML::Filesize(std::filesystem::path &f, Pool &pool) {
   if (!std::filesystem::exists(f)) {
     return " <font color=\"#ff0000\">File not found!</font>";
   } else {
+    pool.begin();
     std::uintmax_t size = std::filesystem::file_size(f);
-    std::stringstream ss;
     if (size < 1e3) {
-      ss << size;
-      return ss.str() + " bytes";
+      pool << size << " bytes";
+      return pool.sv();
     } else {
-      ss.setf(std::ios::fixed);
-      ss << std::setprecision(1) << (size / 1e3);
-      return ss.str() + " kB";
+      pool.setf(std::ios::fixed);
+      pool << std::setprecision(1) << (size / 1e3) << " kB";
+      return pool.sv();
     }
   }
-  return std::string();
+  return "";
 }
