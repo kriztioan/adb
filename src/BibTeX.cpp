@@ -33,7 +33,6 @@ BibTeXParser::~BibTeXParser() {
   if (fmt) {
     bt_free_name_format(fmt);
   }
-  bt_parse_entry_s(nullptr, nullptr, 1, 0, nullptr);
   bt_cleanup();
 }
 
@@ -61,42 +60,43 @@ Record BibTeXParser::Parse() {
   while (field) {
     pool << '&' << key << '=';
     if (strcmp(key, "author") == 0 || strcmp(key, "editor") == 0) {
-
       pool << "%7B";
 
       bt_stringlist *names = bt_split_list(
           bt_get_text(field), const_cast<char *>("and"), nullptr, 1, 0);
 
       for (int i = 0; i < names->num_items; i++) {
-
         bt_name *name = bt_split_name(names->items[i], nullptr, 1, 0);
         if (i > 0) {
           pool << "+and+";
         }
-
         pool << Encoding::URLEncode(bt_format_name(name, fmt));
 
         bt_free_name(name);
       }
-
       pool << "%7D";
 
       bt_free_list(names);
+    } else if (strcmp(key, "keywords") == 0) {
+      char *text;
+      bt_next_value(field, nullptr, nullptr, &text);
+      bt_change_case('l', text, 0);
+      pool << '&' << key << "=%7B" << Encoding::URLEncode(text) << "%7D";
     } else {
-
       bt_nodetype nodetype;
       bt_next_value(field, nullptr, &nodetype, nullptr);
       if (nodetype == BTAST_STRING) {
         pool << '&' << key << "=%7B" << Encoding::URLEncode(bt_get_text(field))
              << "%7D";
       } else {
-
         pool << '&' << key << '=' << bt_get_text(field);
       }
     }
 
     field = bt_next_field(entry, field, &key);
   }
+
+  bt_parse_entry_s(nullptr, nullptr, 1, 0, nullptr);
 
   return Record(const_cast<char *>(pool.sv().data()));
 }

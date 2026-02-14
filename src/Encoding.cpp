@@ -36,34 +36,24 @@ char *Encoding::URLDecodeInplace(char *str) {
 
 std::string Encoding::URLEncode(std::string_view sv) {
 
-  static constexpr const char reserved[] = "$&+,/:;=?@{}";
+  std::stringstream sstr;
+  std::string buf;
+  buf.reserve(sv.length());
+  sstr.str(buf);
 
-  std::string_view::size_type len = sv.length();
-
-  std::string str;
-
-  str.reserve(len);
-
-  char buff[4];
-
-  size_t j;
-  for (std::string_view::size_type i = 0; i < len; i++) {
-    if (sv[i] == ' ') {
-      str += '+';
+  std::string_view::size_type j;
+  for (const auto c : sv) {
+    if (c == ' ') {
+      sstr << '+';
+    } else if ((j = url_reserved.find(c)) != std::string_view::npos) {
+      sstr << '%' << std::hex << std::setw(2) << std::setfill('0')
+           << (int)url_reserved[j];
     } else {
-      for (j = 0; j < sizeof(reserved); j++) {
-        if (sv[i] == reserved[j]) {
-          snprintf(buff, 4, "%%%2X", (int)reserved[j]);
-          str += buff;
-          break;
-        }
-      }
-      if (j == sizeof(reserved)) {
-        str += sv[i];
-      }
+      sstr << c;
     }
   }
-  return str;
+
+  return sstr.str();
 }
 
 std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
@@ -186,51 +176,40 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
 
 std::string Encoding::HTMLEncode(std::string_view sv) {
 
-  size_t len = sv.length();
+  std::stringstream sstr;
+  std::string buf;
+  buf.reserve(sv.length());
 
-  std::string str;
-
-  for (size_t i = 0; i < len; i++) {
-    if (sv[i] == '\r') {
-      continue;
-    } else if (sv[i] == '\n') {
-      str += "<br />\n";
-    } else if (sv[i] == '<') {
-      str += "&lt;";
-    } else if (sv[i] == '>') {
-      str += "&gt;";
-    } else if (sv[i] == '\"') {
-      str += "&quot;";
-    } else {
-      str += sv[i];
+  for (const auto c : sv) {
+    auto esc_it = xml_escape.find(c);
+    if (esc_it != xml_escape.end()) {
+      sstr << esc_it->second;
+    } else if (c == '\n') {
+      sstr << "<br />";
+    } else if (c != '\r') {
+      sstr << c;
     }
   }
 
-  return str;
+  return sstr.str();
 }
 
-std::string Encoding::HTML2XML(std::string_view sv) {
+std::string Encoding::XMLEncode(std::string_view sv) {
 
-  std::string html(sv);
+  std::stringstream sstr;
+  std::string buf;
+  buf.reserve(sv.length());
 
-  std::string::size_type idx = 0;
-  while ((idx = html.find("&", idx)) != std::string::npos) {
-    html.replace(idx, 1, "&amp;");
-    ++idx;
-  }
-
-  static constexpr const char *escape = "\"'<>",
-                              *replace[] = {"&quot;", "&apos;", "&lt;", "&gt;"};
-
-  size_t nescape = strlen(escape);
-
-  for (size_t i = 0; i < nescape; i++) {
-    idx = 0;
-    while ((idx = html.find(escape[i], idx)) != std::string::npos) {
-      html.replace(idx, 1, replace[i]);
-      ++idx;
+  for (const auto c : sv) {
+    auto esc_it = xml_escape.find(c);
+    if (esc_it != xml_escape.end()) {
+      sstr << esc_it->second;
+    } else if (c == '&') {
+      sstr << "&amp;";
+    } else if (c != '\r') {
+      sstr << c;
     }
   }
 
-  return html;
+  return sstr.str();
 }

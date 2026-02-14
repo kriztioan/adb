@@ -11,7 +11,7 @@
 
 bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
 
-  static std::unordered_map<std::string, std::string> types;
+  static std::unordered_map<std::string_view, std::string_view> types;
 
   types["ARTICLE"] = "JournalArticle";
   types["BOOK"] = "Book";
@@ -40,7 +40,8 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   std::string tag;
   field_it = record[ctx.key];
   if (field_it != field_end) {
-    tag = Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
+    tag =
+        Encoding::XMLEncode(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   UUID uuid;
@@ -62,7 +63,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["title"];
   if (field_it != field_end) {
     ostr << "\n<b:Title>"
-         << Encoding::HTML2XML(
+         << Encoding::XMLEncode(
                 Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:Title>";
   }
@@ -79,7 +80,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["author"];
   if (field_it != field_end) {
     authors =
-        Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
+        Encoding::XMLEncode(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   std::string::size_type begin = 0, end;
@@ -168,7 +169,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["editor"];
   if (field_it != field_end) {
     editors =
-        Encoding::HTML2XML(Encoding::LaTeXDecode(field_it->second, ctx.pool));
+        Encoding::XMLEncode(Encoding::LaTeXDecode(field_it->second, ctx.pool));
   }
 
   if (editors.length() != 0) {
@@ -280,7 +281,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
         }
       }
       ostr << "\n<b:JournalName>"
-           << Encoding::HTML2XML(Encoding::LaTeXDecode(journal, ctx.pool))
+           << Encoding::XMLEncode(Encoding::LaTeXDecode(journal, ctx.pool))
            << "</b:JournalName>";
     }
   }
@@ -288,7 +289,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["booktitle"];
   if (field_it != field_end) {
     ostr << "\n<b:BookTitle>"
-         << Encoding::HTML2XML(
+         << Encoding::XMLEncode(
                 Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:BookTitle>";
   }
@@ -296,7 +297,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["series"];
   if (field_it != field_end) {
     ostr << "\n<b:ConferenceName>"
-         << Encoding::HTML2XML(
+         << Encoding::XMLEncode(
                 Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:ConferenceName>";
   }
@@ -304,7 +305,7 @@ bool MSWord::Export(Record &record, std::ostream &ostr, ExportContext &ctx) {
   field_it = record["publisher"];
   if (field_it != field_end) {
     ostr << "\n<b:Publisher>"
-         << Encoding::HTML2XML(
+         << Encoding::XMLEncode(
                 Encoding::LaTeXDecode(field_it->second, ctx.pool))
          << "</b:Publisher>";
   }

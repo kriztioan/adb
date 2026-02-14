@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <string>
+#include <string_view>
 
 #include <openssl/evp.h>
 
@@ -21,6 +21,6 @@ using UUID = struct _UUID {
 
 namespace Uuid {
 
-bool UUIDFromURL(UUID *uuid, const std::string &url);
+bool UUIDFromURL(UUID *uuid, std::string_view url);
 
 }; // namespace Uuid

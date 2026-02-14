@@ -12,6 +12,7 @@
 #include <array>
 #include <charconv>
 #include <cstring>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -24,7 +25,12 @@ char *URLDecodeInplace(char *str);
 std::string URLEncode(std::string_view sv);
 std::string_view LaTeXDecode(std::string_view sv, Pool &pool);
 std::string HTMLEncode(std::string_view sv);
-std::string HTML2XML(std::string_view sv);
+std::string XMLEncode(std::string_view sv);
+
+static inline const std::string_view url_reserved = "$&+,/:;=?@{}";
+
+static inline const std::unordered_map<char, std::string_view> xml_escape = {
+    {'"', "&quot;"}, {'\'', "&apos;"}, {'<', "&lt;"}, {'>', "&gt;"}};
 
 static inline const std::unordered_map<std::string_view, std::string_view>
     latex_symbols = {{"\\sim", "~"},

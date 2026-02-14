@@ -25,6 +25,9 @@ public:
 
   const char *data() const { return pbase(); }
 
+  char *head() { return pptr(); }
+  void bump(std::streamsize size) { return pbump(size); }
+
 protected:
   int overflow(int ch) override {
     if (pptr() == epptr()) {
@@ -58,6 +61,9 @@ public:
 
   size_t capacity() const { return buf.capacity(); }
   size_t size() const { return buf.size(); }
+
+  char *head() { return buf.head(); }
+  void bump(std::streamsize size) { buf.bump(size); }
 
   void begin() { start = buf.size(); }
   std::string_view sv() const {

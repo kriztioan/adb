@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Encoding.h"
+#include "Pool.h"
 #include "Record.h"
 
 #include <charconv>
@@ -44,17 +45,18 @@ public:
   static void WriteHeader(bool nocache = true);
   static void WriteRedirect(std::string_view url);
 
-  static std::string Get(std::string_view url,
-                         std::vector<std::string_view> headers = {},
-                         short port = 80, size_t block_size = 4096);
-  std::string SecureGet(std::string_view url,
-                        std::vector<std::string_view> headers = {},
-                        short port = 443, std::string_view pem = {},
-                        size_t block_size = 4096);
-  std::string SecurePost(std::string_view url, std::string_view post,
-                         std::vector<std::string_view> headers = {},
-                         short port = 443, std::string_view pem = {},
-                         size_t block_size = 4096);
+  static std::string_view Get(std::string_view url, Pool &pool,
+                              std::vector<std::string_view> headers = {},
+                              short port = 80, size_t block_size = 4096);
+  std::string_view SecureGet(std::string_view url, Pool &pool,
+                             std::vector<std::string_view> headers = {},
+                             short port = 443, std::string_view pem = {},
+                             size_t block_size = 4096);
+  std::string_view SecurePost(std::string_view url, std::string_view post,
+                              Pool &pool,
+                              std::vector<std::string_view> headers = {},
+                              short port = 443, std::string_view pem = {},
+                              size_t block_size = 4096);
 
   Record get;
   Record post;

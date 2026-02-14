@@ -120,11 +120,11 @@ void HTTP::WriteRedirect(std::string_view url) {
                "Connection: close\n\n";
 }
 
-std::string HTTP::Get(std::string_view url,
-                      std::vector<std::string_view> headers, short port,
-                      size_t block_size) {
+std::string_view HTTP::Get(std::string_view url, Pool &pool,
+                           std::vector<std::string_view> headers, short port,
+                           size_t block_size) {
 
-  std::string response;
+  std::string_view response;
 
   if (url.empty()) {
     return response;
@@ -166,10 +166,11 @@ std::string HTTP::Get(std::string_view url,
   remote.sin_family = AF_INET;
   remote.sin_port = htons(port);
 
-  std::string_view path(url.begin() + url.find_first_of('/'),
-                        url.size() - url.find_first_of('/'));
+  std::string_view::size_type pos = url.find_first_of('/');
 
-  std::string hostname(url.begin(), url.find_first_of('/'));
+  std::string_view path(url.begin() + pos, url.size() - pos);
+
+  std::string hostname(url.begin(), pos);
 
   struct hostent *remote_host = gethostbyname(hostname.c_str());
   if (!remote_host) {
@@ -183,8 +184,7 @@ std::string HTTP::Get(std::string_view url,
   if (connect(sockfd, (struct sockaddr *)&remote, sizeof(struct sockaddr)) ==
       -1) {
     if (errno == EINPROGRESS) {
-      struct timeval timeout = {.tv_sec = 3,
-                                .tv_usec = 0}; // TODO: Make user configurable
+      struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
       fd_set fdset;
       FD_ZERO(&fdset);
       FD_SET(sockfd, &fdset);
@@ -199,74 +199,70 @@ std::string HTTP::Get(std::string_view url,
     return response;
   }
 
-  std::stringstream ss;
+  pool.begin();
 
-  ss << "GET ";
+  pool << "GET ";
   if (!path.empty()) {
-    ss << path;
+    pool << path;
   } else {
-    ss << '/';
+    pool << '/';
   }
-  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
+  pool << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
-      ss << h << "\r\n";
+      pool << h << "\r\n";
     }
   }
-  ss << "User-Agent: HTTP-Client/1.0\r\nConnection: close\r\n\r\n";
+  pool << "User-Agent: HTTP-Client/1.0\r\nConnection: close\r\n\r\n";
 
-  std::string request(ss.str());
+  std::string_view request = pool.sv();
 
-  const char *bytes = request.c_str();
+  const char *bytes = request.data();
 
-  int bytes_to_send = request.size(), bytes_send, total_bytes_send = 0;
-  while (total_bytes_send < bytes_to_send) {
-    bytes_send = send(sockfd, bytes + total_bytes_send,
-                      bytes_to_send - total_bytes_send, 0);
-    if (bytes_send == -1) {
+  int to_send = request.size(), sent, total_sent = 0;
+  while (total_sent < to_send) {
+    sent = send(sockfd, bytes + total_sent, to_send - total_sent, 0);
+    if (sent == -1) {
       return response;
     }
-    total_bytes_send += bytes_send;
+    total_sent += sent;
   }
 
-  response.reserve(4096);
+  pool.begin();
 
-  std::vector<char> buff;
-  buff.reserve(block_size);
-
-  int bytes_recv;
-  while ((bytes_recv = recv(sockfd, buff.data(), block_size, 0))) {
-    if (bytes_recv == -1) {
+  int recveived;
+  while ((recveived = recv(sockfd, pool.head(), block_size, 0))) {
+    if (recveived == -1) {
       return response;
     }
-    response.append(buff.data(), bytes_recv);
+    pool.bump(recveived);
   }
-  return response.substr(response.find("\r\n\r\n") + 4);
+  response = pool.sv();
+
+  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                             : response;
 }
 
-std::string HTTP::SecureGet(std::string_view url,
-                            std::vector<std::string_view> headers, short port,
-                            std::string_view pem, size_t block_size) {
+std::string_view HTTP::SecureGet(std::string_view url, Pool &pool,
+                                 std::vector<std::string_view> headers,
+                                 short port, std::string_view pem,
+                                 size_t block_size) {
 
-  std::string response;
+  std::string_view response;
 
   if (url.empty()) {
     return response;
   }
 
-  std::string_view path(url.begin() + url.find_first_of('/'),
-                        url.size() - url.find_first_of('/'));
+  std::string_view::size_type pos = url.find_first_of('/');
 
-  std::string hostname(url.begin(), url.find_first_of('/'));
+  std::string_view path(url.begin() + pos, url.size() - pos), request;
+
+  std::string hostname(url.begin(), pos);
 
   SSL_library_init();
 
-  struct timeval timeout = {.tv_sec = 3,
-                            .tv_usec = 0}; // TODO: Make user configurable
-
-  std::stringstream ss;
-
-  std::vector<char> buff;
+  struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
@@ -327,74 +323,71 @@ std::string HTTP::SecureGet(std::string_view url,
     goto fail;
   }
 
-  ss << "GET ";
+  pool.begin();
+
+  pool << "GET ";
   if (!path.empty()) {
-    ss << path;
+    pool << path;
   } else {
-    ss << '/';
+    pool << '/';
   }
-  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
+  pool << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
-      ss << h << "\r\n";
+      pool << h << "\r\n";
     }
   }
-  ss << "User-Agent: HTTP-Client/1.0\r\n"
-     << "Connection: close\r\n\r\n";
+  pool << "User-Agent: HTTP-Client/1.0\r\n"
+          "Connection: close\r\n\r\n";
 
-  if (BIO_puts(bio, ss.str().c_str()) <= 0) {
+  request = pool.sv();
+  if (BIO_puts(bio, request.data()) <= 0) {
     goto fail;
   }
 
-  response.reserve(4096);
+  pool.begin();
 
-  buff.reserve(block_size);
-
-  int bytes_recv;
-  while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
-    if (bytes_recv == -1) {
+  int received;
+  while ((received = BIO_read(bio, pool.head(), block_size))) {
+    if (received == -1) {
       goto fail;
     }
-    response.append(buff.data(), bytes_recv);
+    pool.bump(received);
   }
+  response = pool.sv();
 
-  if (BIO_reset(bio) != 0) {
-    return std::string();
-  }
-
-  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
-                             : std::string();
+  BIO_reset(bio);
 
 fail:
   BIO_free_all(bio);
   bio = nullptr;
   SSL_CTX_free(ctx);
   ctx = nullptr;
-  return response;
+
+  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                             : response;
 }
 
-std::string HTTP::SecurePost(std::string_view url, std::string_view post,
-                             std::vector<std::string_view> headers, short port,
-                             std::string_view pem, size_t block_size) {
-  std::string response;
+std::string_view HTTP::SecurePost(std::string_view url, std::string_view post,
+                                  Pool &pool,
+                                  std::vector<std::string_view> headers,
+                                  short port, std::string_view pem,
+                                  size_t block_size) {
+  std::string_view response;
 
   if (url.empty()) {
     return response;
   }
 
-  std::string_view path(url.begin() + url.find_first_of('/'),
-                        url.size() - url.find_first_of('/'));
+  std::string_view::size_type pos = url.find_first_of('/');
 
-  std::string hostname(url.begin(), url.find_first_of('/'));
+  std::string_view path(url.begin() + pos, url.size() - pos), request;
+
+  std::string hostname(url.begin(), pos);
 
   SSL_library_init();
 
-  struct timeval timeout = {.tv_sec = 3,
-                            .tv_usec = 0}; // TODO: Make user configurable
-
-  std::stringstream ss;
-
-  std::vector<char> buff;
+  struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
 
   if (!ctx) {
     ctx = SSL_CTX_new(TLS_method());
@@ -456,53 +449,53 @@ std::string HTTP::SecurePost(std::string_view url, std::string_view post,
     goto fail;
   }
 
-  ss << "POST ";
+  pool.begin();
+
+  pool << "POST ";
   if (!path.empty()) {
-    ss << path;
+    pool << path;
   } else {
-    ss << '/';
+    pool << '/';
   }
-  ss << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
+  pool << " HTTP/1.0\r\nHost: " << hostname << "\r\n";
   if (headers.size()) {
     for (const auto &h : headers) {
-      ss << h << "\r\n";
+      pool << h << "\r\n";
     }
   }
-  ss << "Content-Length: " << post.length()
-     << "\r\nUser-Agent: HTTP-Client/1.0\r\n"
-     << "Connection: close\r\n\r\n"
-     << post;
+  pool << "Content-Length: " << post.length()
+       << "\r\nUser-Agent: HTTP-Client/1.0\r\n"
+       << "Connection: close\r\n\r\n"
+       << post;
 
-  if (BIO_puts(bio, ss.str().c_str()) <= 0) {
+  request = pool.sv();
+  if (BIO_puts(bio, request.data()) <= 0) {
 
     goto fail;
   };
 
-  response.reserve(4096);
+  pool.begin();
 
-  buff.reserve(block_size);
-
-  int bytes_recv;
-  while ((bytes_recv = BIO_read(bio, buff.data(), block_size))) {
-    if (bytes_recv == -1) {
-      return std::string();
+  int received;
+  while ((received = BIO_read(bio, pool.head(), block_size))) {
+    if (received == -1) {
+      goto fail;
     }
-    response.append(buff.data(), bytes_recv);
+    pool.bump(received);
   }
 
-  if (BIO_reset(bio) != 0) {
-    return std::string();
-  }
+  response = pool.sv();
 
-  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
-                             : std::string();
+  BIO_reset(bio);
 
 fail:
   BIO_free_all(bio);
   bio = nullptr;
   SSL_CTX_free(ctx);
   ctx = nullptr;
-  return response;
+
+  return response.size() > 4 ? response.substr(response.find("\r\n\r\n") + 4)
+                             : response;
 }
 
 int BIO_do_connect_timeout(BIO *bio, struct timeval *timeout) {

@@ -1,6 +1,6 @@
 #include "Uuid.h"
 
-bool Uuid::UUIDFromURL(UUID *uuid, const std::string &url) {
+bool Uuid::UUIDFromURL(UUID *uuid, std::string_view url) {
 
   EVP_MD_CTX *ctx = EVP_MD_CTX_new();
 

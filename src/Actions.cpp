@@ -11,6 +11,8 @@
 
 Pool pool(1L << 21); // 4M
 
+std::string buf;
+
 std::stringstream sout;
 
 std::string_view list_themes(std::filesystem::path &directory) {
@@ -32,6 +34,9 @@ std::string_view list_themes(std::filesystem::path &directory) {
 }
 
 void WriteHTMLHeader(Preferences &prefs) {
+
+  buf.reserve(8192);
+  sout.str(buf);
 
   auto prefs_end = prefs.end();
 
@@ -708,7 +713,7 @@ void DisplayMenu(HTTP &http, [[maybe_unused]] Preferences &prefs) {
   // std::string_view new_version;
   // auto prefs_it = prefs["updates"];
   // if (prefs_it != prefs_end && prefs_it->second == "true") {
-  //   std::string latest = HTTP::Get(UPDATE_URL);
+  //   std::string_view latest = HTTP::Get(UPDATE_URL, pool);
   //   if (latest != CURR_VERSION) {
   //     pool.begin()
   //     pool << " <button title=\"Update AdB to " << latest <<
@@ -1279,12 +1284,10 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
 
   auto uniq = d.UniqueValuesForKey("keywords", split_on_comma);
 
-  std::string_view JSArray(Javascript::Array(uniq, pool));
-
   sout << "<script type=\"text/javascript\">\n"
           "\n"
           "  var choices = "
-       << JSArray
+       << Javascript::Array(uniq, pool)
        << "\n"
           "\n"
           "</script>\n"
@@ -1863,7 +1866,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "    </td>\n"
           "  </tr>\n";
 
-  static constexpr const char *usedKeys[] = {
+  static constexpr const char *keys[] = {
       "id",           "biblcode",    "ADScode",      "doi",          "keywords",
       "type",         "author",      "title",        "booktitle",    "editor",
       "organization", "address",     "edition",      "howpublished", "chapter",
@@ -1872,7 +1875,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
       "summary",      "note",        "ADSfullpaper", "ADSabstract",  "URL",
       "dossier",      "comments",    "archive",      "series"};
 
-  for (const auto *s : usedKeys) {
+  for (const auto *s : keys) {
     field_it = (*record_it)[s];
     if (field_it != field_end) {
       record_it->mFields.erase(field_it);
@@ -2068,12 +2071,13 @@ void QueryADS(HTTP &http, Preferences &prefs) {
 
   std::vector<std::string_view> headers = {authorization, content_type};
 
-  std::string bibtex = http.SecurePost(ADS_API_URL, post, headers, 443, pem);
+  std::string_view bibtex =
+      http.SecurePost(ADS_API_URL, post, pool, headers, 443, pem);
 
   http.post.mFields.clear();
 
   rapidjson::Document json;
-  if (json.Parse(bibtex.c_str()).HasParseError() || !json.HasMember("export")) {
+  if (json.Parse(bibtex.data()).HasParseError() || !json.HasMember("export")) {
     pool.begin();
     pool << ADScode << " (not found)";
     http.post.mFields["ADScode"] = pool.sv();
@@ -2119,11 +2123,12 @@ void QueryDOI(HTTP &http, Preferences &prefs) {
   std::vector<std::string_view> headers = {
       "Accept: text/bibliography; style=bibtex"};
 
-  std::string bibtex(http.SecureGet(url, headers, 443, pem));
+  std::string_view bibtex(http.SecureGet(url, pool, headers, 443, pem));
 
   http.post.mFields.clear();
 
   BibTeXParser parser(bibtex, pool);
+
   if (!parser) {
     pool.begin();
     pool << doi << " (not found)";
@@ -2171,7 +2176,7 @@ void DisplayInfo([[maybe_unused]] HTTP &http, Preferences &prefs) {
           "developed by "
           "Dr.&nbsp;C.&nbsp;Boersma. This is "
        << CURR_VERSION ". The latest version can be downloaded <a href=\""
-       << std::string(LATEST_URL)
+       << LATEST_URL
        << "\">here</a>. The developer can be contacted at <a "
           "href=\"mailto:" CONTACT "\">" CONTACT "</a>\n"
           "      </p>\n"
@@ -3232,7 +3237,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     pool << "&select=DOI,score&mailto=" CONTACT;
     std::string_view url = pool.sv();
 
-    std::string crossref(http.SecureGet(url, {}, 443, pem));
+    std::string_view crossref = http.SecureGet(url, pool, {}, 443, pem);
 
     sout << "  <tr>\n"
             "    <td>\n"
@@ -3244,7 +3249,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
             "    <td>\n";
 
     rapidjson::Document json;
-    if (json.Parse(crossref.c_str()).HasParseError()) {
+    if (json.Parse(crossref.data()).HasParseError()) {
       pool.begin();
       pool << "JSON parse error (" << GetParseError_En(json.GetParseError())
            << ')';
