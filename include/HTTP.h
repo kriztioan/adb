@@ -39,7 +39,7 @@ class HTTP {
 public:
   HTTP();
 
-  bool good();
+  operator bool() const { return state; }
 
   static void WriteHeader(bool nocache = true);
   static void WriteRedirect(std::string_view url);

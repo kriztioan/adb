@@ -103,15 +103,13 @@ HTTP::HTTP() {
   state = true;
 }
 
-bool HTTP::good() { return state; }
-
 void HTTP::WriteHeader(bool nocache) {
   std::cout << "Content-type: text/html; charset=utf-8\n";
   if (nocache) {
     std::cout << "Cache-Control: no-cache, no-store, must-revalidate\n"
                  "Pragma: no-cache\n"
                  "Expires: 0\n"
-                 "Connection: close\n";
+                 "Connection: keep-alive\n";
   }
   std::cout << "\n";
 }
