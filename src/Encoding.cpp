@@ -176,40 +176,38 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
 
 std::string Encoding::HTMLEncode(std::string_view sv) {
 
-  std::stringstream sstr;
-  std::string buf;
-  buf.reserve(sv.length());
+  std::string str;
+  str.reserve(sv.length());
 
   for (const auto c : sv) {
     auto esc_it = xml_escape.find(c);
     if (esc_it != xml_escape.end()) {
-      sstr << esc_it->second;
+      str += esc_it->second;
     } else if (c == '\n') {
-      sstr << "<br />";
+      str += "<br />";
     } else if (c != '\r') {
-      sstr << c;
+      str += c;
     }
   }
 
-  return sstr.str();
+  return str;
 }
 
 std::string Encoding::XMLEncode(std::string_view sv) {
 
-  std::stringstream sstr;
-  std::string buf;
-  buf.reserve(sv.length());
+  std::string str;
+  str.reserve(sv.length());
 
   for (const auto c : sv) {
     auto esc_it = xml_escape.find(c);
     if (esc_it != xml_escape.end()) {
-      sstr << esc_it->second;
+      str += esc_it->second;
     } else if (c == '&') {
-      sstr << "&amp;";
+      str += "&amp;";
     } else if (c != '\r') {
-      sstr << c;
+      str += c;
     }
   }
 
-  return sstr.str();
+  return str;
 }
