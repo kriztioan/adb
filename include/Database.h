@@ -28,7 +28,7 @@ public:
   Database(const std::filesystem::path &f, Pool &pool);
   ~Database();
 
-  bool Good() { return state; }
+  operator bool() { return state; }
 
   bool Commit();
 

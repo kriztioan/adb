@@ -1,4 +1,4 @@
-/**
+/*
  *  @file   Actions.cpp
  *  @brief  Actions Class Implementation
  *  @author KrizTioaN (christiaanboersma@hotmail.com)
@@ -841,7 +841,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -1257,7 +1257,7 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -1420,7 +1420,6 @@ void DisplayRecordForm(HTTP &http, Preferences &prefs) {
           "       Type\n"
           "    </td>\n"
           "    <td>\n"
-          "      "
        << HTML::Select(options, type, "type", "evalType(this)", pool)
        << "\n"
           "    </td>\n"
@@ -1976,7 +1975,7 @@ void Update(HTTP &http, Preferences &prefs) {
 
   auto post_end = http.post.end();
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -2034,6 +2033,7 @@ void Update(HTTP &http, Preferences &prefs) {
       return;
     }
   }
+
   DisplayRecord(http, prefs);
 }
 
@@ -2757,7 +2757,7 @@ void DisplayReindexForm([[maybe_unused]] HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -2831,7 +2831,7 @@ void DisplayKeywords(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -2915,7 +2915,7 @@ void DisplayAuthors(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -2999,7 +2999,7 @@ void DisplayDuplicatesForm(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -3153,7 +3153,7 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -3225,7 +3225,8 @@ void DisplayDOICrossrefForm(HTTP &http, Preferences &prefs) {
     if (field_it != record_end) {
       pool << Encoding::URLEncode(field_it->second);
     }
-    pool << "&query.author=" << author << "&filter=from-pub-date:";
+    pool << "&query.author=" << Encoding::URLEncode(author)
+         << "&filter=from-pub-date:";
     field_it = record_it["year"];
     if (field_it != record_end) {
       pool << field_it->second;
@@ -3336,7 +3337,7 @@ void Delete(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -3394,7 +3395,7 @@ void Import(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     return;
   }
 
@@ -3466,7 +3467,7 @@ void Export(HTTP &http, Preferences &prefs) {
   }
 
   Database d(base_path / prefs_it->second, pool);
-  if (!d.Good()) {
+  if (!d) {
     ofstr.close();
     return;
   }

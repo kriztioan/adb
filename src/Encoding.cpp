@@ -41,15 +41,15 @@ std::string Encoding::URLEncode(std::string_view sv) {
   buf.reserve(sv.length());
   sstr.str(buf);
 
-  std::string_view::size_type j;
   for (const auto c : sv) {
-    if (c == ' ') {
-      sstr << '+';
-    } else if ((j = url_reserved.find(c)) != std::string_view::npos) {
-      sstr << '%' << std::hex << std::setw(2) << std::setfill('0')
-           << (int)url_reserved[j];
-    } else {
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
       sstr << c;
+    } else if (c == ' ') {
+      sstr << '+';
+    } else {
+      sstr << '%' << std::hex << std::uppercase << std::setfill('0')
+           << std::setw(2)
+           << static_cast<unsigned int>(static_cast<unsigned char>(c));
     }
   }
 
@@ -90,7 +90,7 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
         }
         ++j;
       }
-      i = j;
+      i = j - 1;
       continue;
     } else if (sv[i] == '^') {
       if (i + 1 == len) {
@@ -118,7 +118,7 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
         }
         ++j;
       }
-      i = j;
+      i = j - 1;
       continue;
     } else if (sv[i] == '\\') {
       if (i + 1 == len) {
@@ -157,7 +157,7 @@ std::string_view Encoding::LaTeXDecode(std::string_view sv, Pool &pool) {
           pool << utf8_nfc;
           utf8_nfc = std::string_view();
         }
-        i = j;
+        i = j - 1;
         continue;
       }
     } else if (sv[i] == '{' || sv[i] == '}' || sv[i] == '\"' || sv[i] == '~' ||

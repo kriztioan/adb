@@ -341,7 +341,7 @@ std::string_view HTTP::SecureGet(std::string_view url, Pool &pool,
           "Connection: close\r\n\r\n";
 
   request = pool.sv();
-  if (BIO_puts(bio, request.data()) <= 0) {
+  if (BIO_write(bio, request.data(), request.size()) <= 0) {
     goto fail;
   }
 
@@ -469,7 +469,7 @@ std::string_view HTTP::SecurePost(std::string_view url, std::string_view post,
        << post;
 
   request = pool.sv();
-  if (BIO_puts(bio, request.data()) <= 0) {
+  if (BIO_write(bio, request.data(), request.size()) <= 0) {
 
     goto fail;
   };

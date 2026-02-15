@@ -96,5 +96,3 @@ BibTeX::Strings::~Strings() {
     munmap(data, size);
   }
 }
-
-bool BibTeX::Strings::good() { return state; }

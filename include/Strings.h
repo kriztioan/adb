@@ -28,9 +28,9 @@ public:
   Strings(const std::filesystem::path &f, Pool &pool);
   ~Strings();
 
-  int Parse(const std::filesystem::path &f);
+  operator bool() const { return state; }
 
-  bool good();
+  int Parse(const std::filesystem::path &f);
 
   Record strings;
 
