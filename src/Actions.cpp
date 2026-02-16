@@ -350,7 +350,7 @@ void DisplayData(HTTP &http, Preferences &prefs, Record &record,
   if (record_it != record_end) {
     sout << "      "
          << HTML::SplitKeywords(Encoding::LaTeXDecode(record_it->second, pool),
-                                http.self, pool);
+                                http.self, pool, 2);
   }
   sout << "\n    </td>\n"
           "    <td>\n";
@@ -1056,7 +1056,7 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
   field_it = (*record_it)["keywords"];
   if (field_it != field_end) {
     sout << HTML::SplitKeywords(Encoding::LaTeXDecode(field_it->second, pool),
-                                http.self, pool, " – ");
+                                http.self, pool, -1, " – ");
   }
   sout << "      </span> <span ";
   field_it = (*record_it)["biblcode"];

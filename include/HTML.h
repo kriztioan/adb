@@ -27,5 +27,6 @@ std::string_view Filesize(std::filesystem::path &f, Pool &pool);
 std::string_view SplitAuthors(std::string_view authors, std::string_view self,
                               Pool &pool, int max_authors = -1);
 std::string_view SplitKeywords(std::string_view keywords, std::string_view self,
-                               Pool &pool, std::string_view separator = " ");
+                               Pool &pool, int max_keywords = -1,
+                               std::string_view separator = " ");
 }; // namespace HTML

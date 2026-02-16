@@ -91,6 +91,7 @@ std::string_view HTML::SplitAuthors(std::string_view authors,
 
 std::string_view HTML::SplitKeywords(std::string_view keywords,
                                      std::string_view self, Pool &pool,
+                                     int max_keywords,
                                      std::string_view separator) {
 
   if (keywords.empty()) {
@@ -108,16 +109,27 @@ std::string_view HTML::SplitKeywords(std::string_view keywords,
          << "&scheme=keywords\">" << keyword << "</a></span>";
   };
 
+  int nkeywords = 1;
   output_keyword();
-  while (end != std::string_view::npos) {
-    beg = end + 2;
-    end = keywords.find(", ", beg);
-    pool << separator;
-    output_keyword();
+  if (end != std::string_view::npos) {
+    while (nkeywords < max_keywords || max_keywords == -1) {
+      beg = end + 2;
+      end = keywords.find(", ", beg);
+      pool << separator;
+      output_keyword();
+      ++nkeywords;
+      if (end == std::string_view::npos) {
+        break;
+      }
+    }
+    if (nkeywords == max_keywords && end != std::string_view::npos) {
+      pool << " <span class=\"ellipsis\">&hellip;</span>";
+    }
   }
 
   return pool.sv();
 }
+
 std::string_view HTML::Filesize(std::filesystem::path &f, Pool &pool) {
   if (!std::filesystem::exists(f)) {
     return " <font color=\"#ff0000\">File not found!</font>";
