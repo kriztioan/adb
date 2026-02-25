@@ -1101,7 +1101,15 @@ void DisplayRecord(HTTP &http, Preferences &prefs) {
       sout << "  <button id=\"pdf\" title=\"PDF Archive\" "
               "type=\"button\" onclick=\"gotoURL('"
            << baseurl << "script/pdf.js/web/viewer.html?file=%2F"
-           << PDFPath.string() << "')\">Archive</button>";
+           << PDFPath.string() << "&saveName=";
+      if (!ADScode.empty()) {
+        sout << Encoding::URLEncode(ADScode);
+      } else if (!Title.empty()) {
+        sout << Encoding::URLEncode(Title);
+      } else {
+        sout << id_str;
+      }
+      sout << "')\">Archive</button>";
     }
   } else if (!ADScode.empty()) {
     field_it = (*record_it)["ADSfullpaper"];
