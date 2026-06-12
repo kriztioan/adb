@@ -31,6 +31,7 @@
 
 #include "config.h"
 
+#define RAPIDJSON_NOMEMBERITERATORCLASS 1
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 

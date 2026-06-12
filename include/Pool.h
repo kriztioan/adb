@@ -29,7 +29,7 @@ public:
   void bump(std::streamsize size) { return pbump(size); }
 
 protected:
-  int overflow(int ch) override {
+  int overflow(int ch) final {
     if (pptr() == epptr()) {
       return EOF;
     }
@@ -40,7 +40,7 @@ protected:
     return ch;
   }
 
-  std::streamsize xsputn(const char *data, std::streamsize size) override {
+  std::streamsize xsputn(const char *data, std::streamsize size) final {
     if (pptr() + size > epptr()) {
       return EOF;
     }
