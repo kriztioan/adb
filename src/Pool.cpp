@@ -9,7 +9,7 @@
 
 #include "Pool.h"
 
-PoolBuf::PoolBuf(size_t size) : _size(size) {
+PoolBuf::PoolBuf(size_t size) : _size(size), _pool(nullptr) {
 
   size_t page_size = getpagesize();
 
@@ -19,6 +19,7 @@ PoolBuf::PoolBuf(size_t size) : _size(size) {
                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
   if (_pool == MAP_FAILED) {
+    _pool = nullptr;
     return;
   }
 
