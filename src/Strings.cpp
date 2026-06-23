@@ -35,10 +35,11 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
     return state;
   }
 
-  char *data =
+  data =
       (char *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if (data == MAP_FAILED) {
+    data = nullptr;
     close(fd);
     return state;
   }
@@ -78,6 +79,7 @@ int BibTeX::Strings::Parse(const std::filesystem::path &f) {
         while (*p != '\n' && *p)
           ++p;
       } else {
+        close(fd);
         return state;
       }
     }

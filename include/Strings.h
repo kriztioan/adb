@@ -39,7 +39,7 @@ private:
   Pool &pool;
   off_t size;
   bool state;
-  char *data = nullptr;
+  char *data;
 };
 
 } // namespace BibTeX
